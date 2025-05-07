@@ -3,34 +3,186 @@
     <!-- SEE https://asmaloney.com/2014/01/code/creating-an-interactive-map-with-leaflet-and-openstreetmap/ -->
       <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
       <style>
-        html, body {
-          height: 100%;
-          margin: 5px;
-          padding: 0px;
+        html {
+            height: 100%;
+        }
+        body {
+          min-height: 100vh;
+          margin: 0;
+          font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+          background-color: #1e1e1e;
+          color: #e0e0e0;
+          font-size: 25px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        #page-wrapper {
+          width: 95%;
+          max-width: 1800px;
+          height: 90vh;
+          display: flex;
+          flex-direction: column;
+          background-color: #2c2c2c;
+          padding: 20px;
+          box-sizing: border-box;
+          border-radius: 10px;
+          overflow-y: auto;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.25);
         }
         #map {
-          height: 80vh; /* 80% of viewport height */
-          margin: 5px; /* Kept from original combined rule */
-          padding: 0px; /* Kept from original combined rule */
-          border: 1px solid #AAA; /* Moved from inline style */
+          height: 100%;
+          border-radius: 8px;
         }
         #main-content-area {
           display: flex;
-          height: 80vh; /* Adjust as needed, matches map's original viewport height logic */
-          margin-top: 10px;
+          flex-grow: 1;
+          margin: 0;
+          gap: 20px;
+          min-height: 0;
         }
-        #map-container { /* Renaming #map to #map-container for clarity if #map is Leaflet's target */
-          flex: 2;
-          /* height: 100%; */ /* Let Leaflet manage its internal height if #map is still the target */
-          margin-right: 10px;
-          border: 1px solid #AAA; /* Keep border for the map container */
+        #map-container {
+          flex: 3;
+          border: 1px solid #444;
+          border-radius: 8px;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+          background-color: #2c2c2c;
+          padding: 5px;
         }
         #details-panel {
-          flex: 1;
-          padding: 10px;
-          border: 1px solid #CCC;
+          flex: 2;
+          padding: 20px;
+          border: 1px solid #444;
+          border-radius: 8px;
           overflow-y: auto;
-          background-color: #f9f9f9;
+          background-color: #2c2c2c;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+          font-size: 0.6em;
+        }
+        h1 {
+          text-align: center;
+          color: #bb86fc;
+          padding: 20px 0;
+          margin: 0 0 10px 0;
+          font-size: 2.2em;
+          font-weight: 300;
+        }
+        #intro-paragraph {
+            text-align: center;
+            margin: 0 0 15px 0;
+            color: #b0b0b0;
+        }
+        p {
+          line-height: 1.6;
+        }
+        #slider-container {
+          width: 95%;
+          margin: 0 auto 25px auto;
+          padding: 15px;
+          background-color: #2c2c2c;
+          border-radius: 8px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+          position: relative;
+        }
+        #slider-labels {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 8px;
+        }
+        #slider-labels > div {
+          font-size: 0.75em;
+          color: #c0c0c0;
+          cursor: pointer;
+          padding: 5px;
+          border-radius: 4px;
+          transition: background-color 0.3s ease;
+        }
+        #slider-labels > div:hover {
+          background-color: #3f3f3f;
+        }
+        #slider-labels > div > span:first-child {
+            font-weight: 500;
+        }
+        #slider-labels > div > span:last-child {
+            font-size: 0.9em;
+            color: #999999;
+        }
+        input[type="range"] {
+          -webkit-appearance: none;
+          width: 100%;
+          height: 8px;
+          background: #4a4a4a;
+          border-radius: 5px;
+          outline: none;
+          opacity: 0.9;
+          -webkit-transition: .2s;
+          transition: opacity .2s;
+          cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          background: #bb86fc;
+          border-radius: 50%;
+          cursor: pointer;
+          border: 2px solid #2c2c2c;
+          box-shadow: 0 0 2px rgba(0,0,0,0.5);
+        }
+        input[type="range"]::-moz-range-thumb {
+          width: 18px;
+          height: 18px;
+          background: #bb86fc;
+          border-radius: 50%;
+          cursor: pointer;
+          border: 2px solid #2c2c2c;
+          box-shadow: 0 0 2px rgba(0,0,0,0.5);
+        }
+        #current-movement-display {
+          text-align: center;
+          margin-top: 10px;
+          font-weight: 600;
+          color: #bb86fc;
+          font-size: 1.1em;
+        }
+        #details-panel h2 {
+          color: #bb86fc;
+          font-size: 1.6em;
+          margin-bottom: 10px;
+        }
+        #details-panel p {
+          font-size: 0.95em;
+          margin-bottom: 8px;
+          color: #d0d0d0;
+        }
+        #details-panel strong {
+          color: #e0e0e0;
+        }
+        #details-panel em {
+          color: #a0a0a0;
+        }
+        #details-panel img {
+          border-radius: 4px;
+          margin-top: 10px;
+          border: 1px solid #555;
+        }
+        #wikipedia-summary-container h4 {
+            margin-top: 15px;
+            margin-bottom: 5px;
+            color: #bb86fc;
+            font-size: 1.2em;
+        }
+        #wikipedia-summary-container p {
+            color: #d0d0d0;
+            font-size: 0.9em;
+        }
+        #wikipedia-summary-container p a {
+            color: #8ab4f8;
+            text-decoration: none;
+        }
+        #wikipedia-summary-container p a:hover {
+            text-decoration: underline;
         }
       </style> 
 
@@ -49,23 +201,25 @@
 
    </head>
    <body>
-      <h1>Pintores Famosos y sus Raíces</h1>
-      <p>Selecciona un movimiento artístico para ver pintores asociados y sus lugares de nacimiento.</p>
-      <div id="slider-container" style="margin-bottom: 20px; position: relative;">
-        <div id="slider-labels" style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-          <!-- Labels will be populated by JavaScript -->
+      <div id="page-wrapper">
+        <h1>Pintores Famosos y sus Raíces</h1>
+        <p id="intro-paragraph">Selecciona un movimiento artístico para ver pintores asociados y sus lugares de nacimiento.</p>
+        <div id="slider-container">
+          <div id="slider-labels" style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <!-- Labels will be populated by JavaScript -->
+          </div>
+          <input type="range" id="artisticMovementSlider" name="artisticMovementSlider" min="0" max="12" value="0" style="width: 100%;">
+          <div id="current-movement-display" style="text-align: center; margin-top: 5px; font-weight: bold;">
+            <!-- Current movement will be displayed here -->
+          </div>
         </div>
-        <input type="range" id="artisticMovementSlider" name="artisticMovementSlider" min="0" max="12" value="0" style="width: 100%;">
-        <div id="current-movement-display" style="text-align: center; margin-top: 5px; font-weight: bold;">
-          <!-- Current movement will be displayed here -->
-        </div>
-      </div>
-      <div id="main-content-area">
-        <div id="map-container">
-             <div id="map" style="height: 100%;"></div> <!-- Leaflet target, ensure it fills map-container -->
-        </div>
-        <div id="details-panel">
-          <p>Haz clic en un marcador en el mapa para ver los detalles aquí.</p>
+        <div id="main-content-area">
+          <div id="map-container">
+               <div id="map" style="height: 100%;"></div>
+          </div>
+          <div id="details-panel">
+            <p>Haz clic en un marcador en el mapa para ver los detalles aquí.</p>
+          </div>
         </div>
       </div>
     
