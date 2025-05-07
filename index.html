@@ -18,39 +18,53 @@
           justify-content: center;
         }
         #page-wrapper {
-          width: 95%;
-          max-width: 1800px;
+          width: 97%;
           height: 90vh;
           display: flex;
-          flex-direction: column;
+          flex-direction: row;
           background-color: #2c2c2c;
           padding: 20px;
           box-sizing: border-box;
           border-radius: 10px;
-          overflow-y: auto;
+          overflow: hidden;
           box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+          gap: 20px;
         }
         #map {
           height: 100%;
           border-radius: 8px;
         }
-        #main-content-area {
+        #left-column {
           display: flex;
-          flex-grow: 1;
-          margin: 0;
+          flex-direction: column;
+          flex: 2;
+          height: 100%;
           gap: 20px;
-          min-height: 0;
+        }
+        #info-slider-area {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          background-color: #2c2c2c;
+          border: 1px solid #444;
+          border-radius: 8px;
+          overflow-y: auto;
+          padding: 15px;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         #map-container {
-          flex: 3;
+          flex: 1;
           border: 1px solid #444;
           border-radius: 8px;
           box-shadow: 0 2px 5px rgba(0,0,0,0.2);
           background-color: #2c2c2c;
           padding: 5px;
+          display: flex;
+          flex-direction: column;
         }
         #details-panel {
-          flex: 2;
+          flex: 1;
+          height: 100%;
           padding: 20px;
           border: 1px solid #444;
           border-radius: 8px;
@@ -62,7 +76,7 @@
         h1 {
           text-align: center;
           color: #bb86fc;
-          padding: 20px 0;
+          padding: 10px 0;
           margin: 0 0 10px 0;
           font-size: 2.2em;
           font-weight: 300;
@@ -76,10 +90,10 @@
           line-height: 1.6;
         }
         #slider-container {
-          width: 95%;
-          margin: 0 auto 25px auto;
-          padding: 15px;
-          background-color: #2c2c2c;
+          width: 90%;
+          margin: 0 auto 10px auto;
+          padding: 10px;
+          background-color: #333;
           border-radius: 8px;
           box-shadow: 0 1px 3px rgba(0,0,0,0.15);
           position: relative;
@@ -88,24 +102,54 @@
           display: flex;
           justify-content: space-between;
           margin-bottom: 8px;
+          position: relative;
+          height: 40px; /* Space for top labels */
         }
-        #slider-labels > div {
+        #slider-bottom-labels {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 8px;
+          position: relative;
+          height: 40px; /* Space for bottom labels */
+        }
+        .slider-label {
+          position: absolute;
           font-size: 0.75em;
           color: #c0c0c0;
           cursor: pointer;
           padding: 5px;
           border-radius: 4px;
           transition: background-color 0.3s ease;
+          text-align: center;
+          width: 100px; /* Fixed width for label */
+          transform: translateX(-50%); /* Center the label on its position */
         }
-        #slider-labels > div:hover {
+        .slider-label:hover {
           background-color: #3f3f3f;
         }
-        #slider-labels > div > span:first-child {
+        .slider-label > span:first-child {
             font-weight: 500;
+            display: block;
         }
-        #slider-labels > div > span:last-child {
+        .slider-label > span:last-child {
             font-size: 0.9em;
             color: #999999;
+            display: block;
+        }
+        .slider-label.active-label > span:first-child { /* Style for active label name */
+            color: #bb86fc; /* Highlight color */
+        }
+        .slider-label.active-label { /* Style for active label container */
+             font-weight: 600; /* Bolder */
+             background-color: #4a4a4a; /* Slightly different background */
+        }
+        .tick-mark {
+          position: absolute;
+          width: 2px;
+          height: 8px;
+          background-color: #888;
+          transform: translateX(-50%);
+          bottom: -2px;
         }
         input[type="range"] {
           -webkit-appearance: none;
@@ -202,24 +246,26 @@
    </head>
    <body>
       <div id="page-wrapper">
-        <h1>Pintores Famosos y sus Raíces</h1>
-        <p id="intro-paragraph">Selecciona un movimiento artístico para ver pintores asociados y sus lugares de nacimiento.</p>
-        <div id="slider-container">
-          <div id="slider-labels" style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-            <!-- Labels will be populated by JavaScript -->
+        <div id="left-column">
+          <div id="info-slider-area">
+            <h1>Pintores Famosos y sus Raíces</h1>
+            <p id="intro-paragraph">Selecciona un movimiento artístico para ver pintores asociados y sus lugares de nacimiento.</p>
+            <div id="slider-container">
+              <div id="slider-labels" style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <!-- Labels will be populated by JavaScript -->
+              </div>
+              <input type="range" id="artisticMovementSlider" name="artisticMovementSlider" min="0" max="12" value="0" style="width: 100%;">
+              <div id="current-movement-display" style="text-align: center; margin-top: 5px; font-weight: bold;">
+                <!-- Current movement will be displayed here -->
+              </div>
+            </div>
           </div>
-          <input type="range" id="artisticMovementSlider" name="artisticMovementSlider" min="0" max="12" value="0" style="width: 100%;">
-          <div id="current-movement-display" style="text-align: center; margin-top: 5px; font-weight: bold;">
-            <!-- Current movement will be displayed here -->
-          </div>
-        </div>
-        <div id="main-content-area">
           <div id="map-container">
                <div id="map" style="height: 100%;"></div>
           </div>
-          <div id="details-panel">
-            <p>Haz clic en un marcador en el mapa para ver los detalles aquí.</p>
-          </div>
+        </div>
+        <div id="details-panel">
+          <p>Haz clic en un marcador en el mapa para ver los detalles aquí.</p>
         </div>
       </div>
     
@@ -478,43 +524,51 @@ LIMIT 100`;
         detailsPanel = $('#details-panel'); 
         const artisticMovementSlider = $('#artisticMovementSlider');
         const sliderLabelsContainer = $('#slider-labels');
+        const sliderBottomLabelsContainer = $('<div id="slider-bottom-labels"></div>');
         const currentMovementDisplay = $('#current-movement-display');
 
-        artisticMovements.forEach((movement, index) => {
-            const labelContainer = $('<div>').css({ 
-                'flex': '1',
-                'text-align': 'center',
-                'cursor': 'pointer',
-                'padding': '2px',
-                'border-left': index > 0 ? '1px solid #eee' : 'none',
-                'display': 'flex', 
-                'flex-direction': 'column', 
-                'justify-content': 'center', 
-                'align-items': 'center' 
-            });
+        // Add bottom labels container after the slider
+        artisticMovementSlider.after(sliderBottomLabelsContainer);
+
+        // Clear any existing labels
+        sliderLabelsContainer.empty();
+        sliderBottomLabelsContainer.empty();
+
+        // Create a reversed copy of the movements array for display
+        const reversedMovements = [...artisticMovements].reverse();
+
+        // Calculate the width of each segment
+        const segmentWidth = 100 / (reversedMovements.length - 1);
+
+        // Add tick marks on the slider track
+        for (let i = 0; i < reversedMovements.length; i++) {
+            const position = i * segmentWidth;
+            const tickMark = $('<div class="tick-mark"></div>').css('left', position + '%');
+            // Make tick marks children of slider-container for better positioning relative to the range input
+            artisticMovementSlider.before(tickMark); // Place ticks before the slider input itself
+        }
+
+        reversedMovements.forEach((movement, indexInReversed) => {
+            const position = indexInReversed * segmentWidth;
+            
+            const labelContainer = $('<div>').addClass('slider-label').css('left', position + '%');
+            labelContainer.attr('data-uri', movement.uri); // Store URI for easy identification
 
             const nameSpan = $('<span>').text(movement.name).attr('title', movement.name);
-            nameSpan.css({
-                'font-size': '0.8em', 
-                'margin-bottom': '2px' 
-            });
-
-            const dateSpan = $('<span>').text(`(${movement.startYear} - ${movement.endYear})`);
-            dateSpan.css({
-                'font-size': '0.6em', 
-                'font-weight': 'lighter', 
-                'color': '#555' 
-            });
-
-            labelContainer.append(nameSpan).append(dateSpan);
+            labelContainer.append(nameSpan);
             
             labelContainer.on('click', function() {
-                artisticMovementSlider.val(index).trigger('input');
+                artisticMovementSlider.val(indexInReversed).trigger('input');
             });
-            sliderLabelsContainer.append(labelContainer);
+
+            if (indexInReversed % 2 === 0) {
+                sliderLabelsContainer.append(labelContainer);
+            } else {
+                sliderBottomLabelsContainer.append(labelContainer);
+            }
         });
         
-        artisticMovementSlider.attr('max', artisticMovements.length - 1);
+        artisticMovementSlider.attr('max', reversedMovements.length - 1); // Max value is based on reversed length
 
         const initialMapOptions = {
             center: [45, 10], 
@@ -530,18 +584,26 @@ LIMIT 100`;
                 currentMarkers = [];
                 clearDetailsPanel(); 
                 currentMovementDisplay.text("Seleccione un movimiento");
+                $('#slider-labels .slider-label, #slider-bottom-labels .slider-label').removeClass('active-label');
                 return;
             }
 
-            const selectedMovement = artisticMovements.find(m => m.uri === movementURI);
-            if (selectedMovement) {
-                currentMovementDisplay.text(selectedMovement.name);
-                sliderLabelsContainer.children().css('font-weight', 'normal');
-                const movementIndex = artisticMovements.findIndex(m => m.uri === movementURI);
-                if (movementIndex !== -1) {
-                     sliderLabelsContainer.children().eq(movementIndex).css('font-weight', 'bold');
+            const actualMovementData = artisticMovements.find(m => m.uri === movementURI); // Get data from original array
+            
+            if (actualMovementData) {
+                currentMovementDisplay.text(actualMovementData.name);
+                
+                // Clear active class from all labels
+                $('#slider-labels .slider-label, #slider-bottom-labels .slider-label').removeClass('active-label');
+                
+                // Add active class to the current one
+                const labelToActivate = $(`.slider-label[data-uri="${movementURI}"]`);
+                if (labelToActivate.length) {
+                    labelToActivate.addClass('active-label');
                 }
-
+            } else {
+                currentMovementDisplay.text("Movimiento desconocido");
+                $('#slider-labels .slider-label, #slider-bottom-labels .slider-label').removeClass('active-label');
             }
 
             if (movementDataCache[movementURI]) {
@@ -569,15 +631,18 @@ LIMIT 100`;
             }
         }
 
-        artisticMovements.forEach(function(movement) {
+        artisticMovements.forEach(function(movement) { // Pre-fetch based on original array
             const movementURI = movement.uri;
             if (movementURI) { 
                 const sparqlQueryContent = queryPaintersAndArtworks(movementURI);
                 if (sparqlQueryContent) {
                     makeSPARQLQuery(endpointUrl, sparqlQueryContent, function (data) {
                         console.log("Pre-fetched painters for movement " + movementURI + ":", data.results.bindings);
-                        movementDataCache[movementURI] = data.results.bindings;
-                        if (movementURI === artisticMovements[parseInt(artisticMovementSlider.val())].uri) {
+                        movementDataCache[movementURI] = data.results.bindings; 
+                        
+                        // If this pre-fetched movement is the one currently selected on the slider, update map
+                        const currentSliderVal = parseInt(artisticMovementSlider.val());
+                        if (reversedMovements[currentSliderVal] && movementURI === reversedMovements[currentSliderVal].uri) {
                             updateMapForMovement(movementURI);
                         }
                     }).fail(function(jqXHR, textStatus, errorThrown) {
@@ -588,21 +653,17 @@ LIMIT 100`;
         });
 
         artisticMovementSlider.on('input change', function() { 
-            const selectedIndex = parseInt($(this).val());
-            const selectedMovement = artisticMovements[selectedIndex];
-            if (selectedMovement) {
+            const selectedReversedIndex = parseInt($(this).val());
+            if (reversedMovements[selectedReversedIndex]) {
+                const selectedMovement = reversedMovements[selectedReversedIndex];
                 updateMapForMovement(selectedMovement.uri);
             }
         });
 
-        const initialMovementIndex = parseInt(artisticMovementSlider.val());
-        if (artisticMovements[initialMovementIndex]) {
-            if (movementDataCache[artisticMovements[initialMovementIndex].uri]) {
-                 updateMapForMovement(artisticMovements[initialMovementIndex].uri);
-            }
-            currentMovementDisplay.text(artisticMovements[initialMovementIndex].name);
-             sliderLabelsContainer.children().eq(initialMovementIndex).css('font-weight', 'bold');
-
+        // Initial setup based on slider's default value (usually 0)
+        const initialReversedIndex = parseInt(artisticMovementSlider.val());
+        if (reversedMovements[initialReversedIndex]) {
+            updateMapForMovement(reversedMovements[initialReversedIndex].uri);
         } else {
             currentMovementDisplay.text("Seleccione un movimiento");
         }
