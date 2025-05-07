@@ -1,0 +1,192 @@
+<html lang="es-ES" xmlns="http://www.w3.org/1999/xhtml">
+   <head profile="http://gmpg.org/xfn/11">
+    <!-- SEE https://asmaloney.com/2014/01/code/creating-an-interactive-map-with-leaflet-and-openstreetmap/ -->
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <style>
+        html, body, #map {
+          height: 100%;
+          margin: 5px;
+          padding: 0px
+        }
+      </style> 
+
+      <script 
+        type='text/javascript' 
+        src='http://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js'>
+      </script>
+
+       <link  rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin=""/>
+    
+   </head>
+    <script type='text/javascript'>
+      function makeSPARQLQuery( endpointUrl, sparqlQuery, doneCallback ) {
+  var settings = {
+    headers: { Accept: 'application/sparql-results+json' },
+    data: { query: sparqlQuery }
+  };
+  return $.ajax( endpointUrl, settings ).then( doneCallback );
+}
+
+function myOnLoad() {
+ cargar_peliculas();
+}
+
+// funcion para Cargar Provincias al campo <select>
+function cargar_peliculas() {
+ makeSPARQLQuery( endpointUrl, queryPeliculas(), function( data) {
+    //$( 'body' ).append( $( '<pre>' ).text( JSON.stringify( data ) ) );
+          addOptions("pelicula", data.results.bindings);
+         });
+ 
+}
+
+// Rutina para agregar opciones a un <select>
+function addOptions(domElement, json) {
+ var select = document.getElementsByName(domElement)[0];
+ json.forEach(function(info){
+    var film = info.film.value;
+    var filLabel= info.filmLabel.value;
+    var option = document.createElement("option");
+    option.text = filLabel;
+    option.value=film;
+    select.add(option);});
+}
+
+    </script>
+   <body onLoad="myOnLoad()">
+      <h1>Ejemplo Wikidata + OSM</h1>
+      <p>Lugares en los que se rodaron las peliculas de marvel</p>
+      <select name="pelicula" id="pelicula">
+        <option>Seleccione una pelicula...</option>
+      </select>
+      <input type="button" value="Actualizar"></input>
+      <div id="map" style="height: 440px; border: 1px solid #AAA;"></div>
+    
+     <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+    
+    <script type='text/javascript'>
+
+
+
+
+////AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+function makeSPARQLQuery( endpointUrl, sparqlQuery, doneCallback ) {
+  var settings = {
+    headers: { Accept: 'application/sparql-results+json' },
+    data: { query: sparqlQuery }
+  };
+  return $.ajax( endpointUrl, settings ).then( doneCallback );
+}
+
+
+var endpointUrl = 'https://query.wikidata.org/sparql';
+ 
+function queryLocalizacion(){
+  var select = document.getElementById("pelicula");
+  var opcionSelect = "wd:"+select.value.substring(31);
+  console.log(opcionSelect)
+  var sparqlQuery ="SELECT DISTINCT ?placeLabel ?placeDescription ?lon ?lat ?img\n" +
+        "WITH {\n" +
+        "SELECT ?place ?lat ?lon WHERE {\n" +
+        "\n" +
+        opcionSelect+" wdt:P915 ?place .\n" +
+        "# Coordenadas\n" +
+        "?place p:P625/psv:P625 [\n" +
+        "wikibase:geoLatitude ?lat;\n" +
+        "wikibase:geoLongitude ?lon ] .\n" +
+        "}\n" +
+        "} AS %POIS\n" +
+        "WHERE {\n" +
+        "INCLUDE %POIS .\n" +
+        "?place wdt:P18 ?img . # Fotografía\n" +
+        "SERVICE wikibase:label { bd:serviceParam wikibase:language \"[AUTO_LANGUAGE],es\". }\n" +
+        "}\n" +
+        "";;
+        return sparqlQuery;
+}
+
+function queryPeliculas(){
+  var sparqlQuery ="SELECT DISTINCT ?film ?filmLabel WHERE {\n" +
+        "        ?film wdt:P31 wd:Q11424;\n" +
+        "              wdt:P272 wd:Q367466.\n" +
+        "SERVICE wikibase:label { bd:serviceParam wikibase:language \"[AUTO_LANGUAGE],es\" }\n" +
+        "}";
+        return sparqlQuery;
+}
+
+// Añade POIs
+function addPOIs(pois, map) {
+  pois.forEach(function(info){
+    var myIcon = L.icon({
+      iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/40/Toicon-icon-avocado-locate.svg',
+      iconSize: [29, 24],
+      iconAnchor: [9, 21],
+      popupAnchor: [0, -14]
+    })
+    var img= info.img == undefined ? " ": info.img.value
+    var description = info.placeDescription==undefined ? " ": info.placeDescription.value
+    var textpopup='<div id="content">'+
+          '<h1>'+info.placeLabel.value+'</h1>'+
+                  '<p><img width="30%" align="left" src="'+img+'">'+description+'</p>'+
+          '</div>';
+    
+  L.marker( [info.lat.value, info.lon.value], {icon: myIcon} )
+        .bindPopup( textpopup, {maxHeight: 200, maxWidth: 500} )
+        .addTo( map );
+  });
+} // /addPOIs
+
+// MAIN - Inicializar mapa
+
+function createMap(options) {
+    var map = L.map( 'map', options);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png?{foo}', {
+    foo: 'bar', 
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+    return map;
+}
+
+
+$(function () {
+  var map;
+  var options;
+
+    options = {
+        center: [37.76, -3.77],
+        minZoom: 2,
+        zoom: 11
+    };
+    map = createMap(options);
+    makeSPARQLQuery( endpointUrl, queryLocalizacion(), function( data) {
+    //$( 'body' ).append( $( '<pre>' ).text( JSON.stringify( data ) ) );
+    console.log(data.results.bindings);
+    addPOIs( data.results.bindings,map );
+  }
+);
+    $('input').on('click', () => {
+        center = map.getCenter();
+        options.center = [center.lat, center.lng];
+        console.log(options.center)
+        options.minZoom = map.getMinZoom();
+        options.zoom = map.getZoom();
+        map.remove();
+        map = createMap(options);
+        makeSPARQLQuery( endpointUrl, queryLocalizacion(), function( data) {
+    //$( 'body' ).append( $( '<pre>' ).text( JSON.stringify( data ) ) );
+      console.log(data.results.bindings);
+          addPOIs( data.results.bindings,map );
+         });
+    });
+});
+
+      </script>
+   </body>
+</html>
