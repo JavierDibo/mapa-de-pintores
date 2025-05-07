@@ -1,0 +1,83 @@
+<html lang="es-ES" xmlns="http://www.w3.org/1999/xhtml">
+   <head profile="http://gmpg.org/xfn/11">
+    <!-- SEE https://asmaloney.com/2014/01/code/creating-an-interactive-map-with-leaflet-and-openstreetmap/ -->
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <style>
+        html, body {
+          height: 100%;
+          margin: 5px;
+          padding: 0px;
+        }
+        #map {
+          height: 80vh; /* 80% of viewport height */
+          margin: 5px; /* Kept from original combined rule */
+          padding: 0px; /* Kept from original combined rule */
+          border: 1px solid #AAA; /* Moved from inline style */
+        }
+        #main-content-area {
+          display: flex;
+          height: 80vh; /* Adjust as needed, matches map's original viewport height logic */
+          margin-top: 10px;
+        }
+        #map-container { /* Renaming #map to #map-container for clarity if #map is Leaflet's target */
+          flex: 2;
+          /* height: 100%; */ /* Let Leaflet manage its internal height if #map is still the target */
+          margin-right: 10px;
+          border: 1px solid #AAA; /* Keep border for the map container */
+        }
+        #details-panel {
+          flex: 1;
+          padding: 10px;
+          border: 1px solid #CCC;
+          overflow-y: auto;
+          background-color: #f9f9f9;
+        }
+      </style> 
+
+      <script 
+        type='text/javascript' 
+        src='http://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js'>
+      </script>
+
+       <link  rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin=""/>
+    
+   </head>
+   <body>
+      <h1>Pintores Famosos y sus Raíces</h1>
+      <p>Selecciona un movimiento artístico para ver pintores asociados y sus lugares de nacimiento.</p>
+      <select name="artisticMovement" id="artisticMovement" style="margin-right: 10px;">
+        <option value="">Seleccione un movimiento...</option>
+        <option value="http://www.wikidata.org/entity/Q134147" selected>Pop Art</option>
+        <option value="http://www.wikidata.org/entity/Q177725">Expresionismo Abstracto</option>
+        <option value="http://www.wikidata.org/entity/Q39427">Surrealismo</option>
+        <option value="http://www.wikidata.org/entity/Q42934">Cubismo</option>
+        <option value="http://www.wikidata.org/entity/Q80113">Expresionismo</option>
+        <option value="http://www.wikidata.org/entity/Q34636">Art Nouveau</option>
+        <option value="http://www.wikidata.org/entity/Q166713">Postimpresionismo</option>
+        <option value="http://www.wikidata.org/entity/Q40415">Impresionismo</option>
+        <option value="http://www.wikidata.org/entity/Q37068">Romanticismo</option>
+        <option value="http://www.wikidata.org/entity/Q14378">Neoclasicismo</option>
+        <option value="http://www.wikidata.org/entity/Q122960">Rococó</option>
+        <option value="http://www.wikidata.org/entity/Q37853">Barroco</option>
+        <option value="http://www.wikidata.org/entity/Q4692">Renacimiento</option>
+      </select>
+      <input type="button" value="Actualizar"></input>
+      <div id="main-content-area">
+        <div id="map-container">
+             <div id="map" style="height: 100%;"></div> <!-- Leaflet target, ensure it fills map-container -->
+        </div>
+        <div id="details-panel">
+          <p>Haz clic en un marcador en el mapa para ver los detalles aquí.</p>
+        </div>
+      </div>
+    
+     <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+    
+    <script src="map_script.js"></script>
+   </body>
+</html>
