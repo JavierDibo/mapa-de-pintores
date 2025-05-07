@@ -2,9 +2,28 @@
     // Global variables within IIFE scope
     const endpointUrl = 'https://query.wikidata.org/sparql';
     let map;
-    let currentMarkers = []; // To keep track of current markers for removal
+    let currentMarkers = []; // This might still be useful for direct references if needed, but map display is via clusters
+    let markerClusterGroup; // For Leaflet.markercluster
     let movementDataCache = {}; // Cache for pre-fetched movement data
     let detailsPanel; // To store the jQuery object for the details panel
+    let currentWikiRequest = null; // To keep track of the current Wikipedia API request
+
+    // Define artistic movements - this replaces the HTML select
+    const artisticMovements = [
+        { name: "Pop Art", uri: "http://www.wikidata.org/entity/Q134147", startYear: "1950s", endYear: "1970s" },
+        { name: "Expresionismo Abstracto", uri: "http://www.wikidata.org/entity/Q177725", startYear: "1940s", endYear: "1960s" },
+        { name: "Surrealismo", uri: "http://www.wikidata.org/entity/Q39427", startYear: "1920s", endYear: "1950s" },
+        { name: "Cubismo", uri: "http://www.wikidata.org/entity/Q42934", startYear: "1900s", endYear: "1920s" },
+        { name: "Expresionismo", uri: "http://www.wikidata.org/entity/Q80113", startYear: "1900s", endYear: "1930s" },
+        { name: "Art Nouveau", uri: "http://www.wikidata.org/entity/Q34636", startYear: "1890s", endYear: "1910s" },
+        { name: "Postimpresionismo", uri: "http://www.wikidata.org/entity/Q166713", startYear: "1880s", endYear: "1900s" },
+        { name: "Impresionismo", uri: "http://www.wikidata.org/entity/Q40415", startYear: "1860s", endYear: "1890s" },
+        { name: "Romanticismo", uri: "http://www.wikidata.org/entity/Q37068", startYear: "1790s", endYear: "1850s" },
+        { name: "Neoclasicismo", uri: "http://www.wikidata.org/entity/Q14378", startYear: "1760s", endYear: "1830s" },
+        { name: "Rococó", uri: "http://www.wikidata.org/entity/Q122960", startYear: "1730s", endYear: "1770s" },
+        { name: "Barroco", uri: "http://www.wikidata.org/entity/Q37853", startYear: "1600s", endYear: "1750s" },
+        { name: "Renacimiento", uri: "http://www.wikidata.org/entity/Q4692", startYear: "1300s", endYear: "1600s" }
+    ];
 
     // SPARQL Query Functions
     function makeSPARQLQuery(endpointUrl, sparqlQuery, doneCallback) {
@@ -83,36 +102,66 @@ LIMIT 100`;
 
     // Map Related Functions
     function createMap(options) {
-        // Ensure map variable is assigned to the IIFE's scoped map variable
         map = L.map('map', options);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png?{foo}', {
             foo: 'bar',
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
-        // No need to return map if it's assigned to the outer scope variable directly
+
+        // Initialize the marker cluster group and add it to the map
+        markerClusterGroup = L.markerClusterGroup({ maxClusterRadius: 40 });
+        map.addLayer(markerClusterGroup);
     }
 
-    function addPOIs(pois) { // mapInstance parameter removed, uses scoped map variable
-        // Clear existing markers
-        currentMarkers.forEach(function (marker) {
-            map.removeLayer(marker); // Use scoped map variable
-        });
-        currentMarkers = [];
-        clearDetailsPanel(); // Clear details panel when new POIs are being added
+    function addPOIs(pois) {
+        // Clear existing markers from the cluster group
+        markerClusterGroup.clearLayers();
+        currentMarkers = []; // Also clear the auxiliary array
+
+        // Temporarily remove the cluster group to prevent issues if addLayer is slow with many markers
+        // map.removeLayer(markerClusterGroup); 
+        // ^ This line can sometimes help but let's try without it first. Add back if clearing/adding is still slow.
+
+        clearDetailsPanel();
+
+        const newMarkersBatch = []; // Batch add markers for potentially better performance
 
         pois.forEach(function (info) {
-            const myIcon = L.icon({
-                iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-                iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-                shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
-                shadowSize: [41, 41]
+            const commonsPrefix = "https://upload.wikimedia.org/wikipedia/commons/";
+
+            // Determine the display letter for the marker
+            const painterLabel = info.painterLabel ? info.painterLabel.value : "Artista Desconocido";
+            let displayLetter = "?";
+            if (painterLabel === "Artista Desconocido") {
+                displayLetter = "A";
+            } else {
+                const nameParts = painterLabel.split(' ');
+                let nameForLetter = painterLabel; // Default to full label if no parts or single part
+                if (nameParts.length > 1) {
+                    nameForLetter = nameParts[nameParts.length - 1]; // Last part as surname
+                } else if (nameParts.length === 1 && nameParts[0] !== "") {
+                    nameForLetter = nameParts[0]; // First part if only one word
+                }
+                if (nameForLetter.length > 0) {
+                    displayLetter = nameForLetter.charAt(0).toUpperCase();
+                }
+            }
+
+            // HTML for the DivIcon with the letter
+            const letterIconHtml = 
+                `<div style="width: 38px; height: 38px; border-radius: 50%; background-color: #4A90E2; color: white; border: 1px solid #FFFFFF; box-shadow: 0 0 3px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; font-size:18px; font-weight:bold; font-family: Arial, sans-serif;">` +
+                `${displayLetter}` +
+                `</div>`;
+
+            const customMarkerIcon = L.divIcon({
+                html: letterIconHtml,
+                className: 'custom-map-letter-icon', // A more specific class name
+                iconSize: [40, 40],      // Size of the icon (wrapper, content is 38x38)
+                iconAnchor: [20, 40],    
+                popupAnchor: [0, -20]   
             });
 
-            const painterLabel = info.painterLabel ? info.painterLabel.value : "Artista Desconocido";
             const painterDescription = info.painterDescription ? info.painterDescription.value : "";
             const birthPlaceLabel = info.placeOfBirthLabel ? info.placeOfBirthLabel.value : "Lugar de nacimiento desconocido";
 
@@ -150,17 +199,13 @@ LIMIT 100`;
             let rawFinalImageUrl = artworkImageUrl || painterImageUrl || placeholderImageUrl;
             let finalImageUrl = rawFinalImageUrl;
 
-            const commonsPrefix = "https://upload.wikimedia.org/wikipedia/commons/";
             if (rawFinalImageUrl.startsWith(commonsPrefix) && rawFinalImageUrl !== placeholderImageUrl) {
                 try {
-                    const imagePathWithHash = rawFinalImageUrl.substring(commonsPrefix.length);
-                    // Filename might contain characters needing encoding for the URL path component construction for thumbnail service
-                    // However, the final part of the thumbnail URL (after /300px-) should be the original filename, not double-encoded.
-                    const filename = decodeURIComponent(imagePathWithHash.substring(imagePathWithHash.lastIndexOf('/') + 1));
-                    const encodedImagePath = imagePathWithHash.split('/').map(segment => encodeURIComponent(segment)).join('/');
-                    finalImageUrl = `${commonsPrefix}thumb/${encodedImagePath}/300px-${filename}`;
+                    const imageFileAndPath = rawFinalImageUrl.substring(commonsPrefix.length);
+                    const filenameComponentForThumbnail = imageFileAndPath.substring(imageFileAndPath.lastIndexOf('/') + 1);
+                    finalImageUrl = `${commonsPrefix}thumb/${imageFileAndPath}/300px-${filenameComponentForThumbnail}`;
                 } catch (e) {
-                    console.error("Error constructing thumbnail URL for: " + rawFinalImageUrl, e);
+                    console.error("Error constructing thumbnail URL for popup: " + rawFinalImageUrl, e);
                     finalImageUrl = rawFinalImageUrl; // Fallback to original if error
                 }
             }
@@ -185,22 +230,74 @@ LIMIT 100`;
     ${painterDescription ? `<p style="font-size:0.85em; margin-top:0; margin-bottom:10px; font-style:italic;">${painterDescription}</p>` : ''}
 </div>`;
 
-            const newMarker = L.marker([info.lat.value, info.lon.value], { icon: myIcon })
-                .addTo(map) // Use scoped map variable
+            const newMarker = L.marker([info.lat.value, info.lon.value], { icon: customMarkerIcon })
+                // .addTo(map) // Markers are added to the cluster group instead
                 .bindPopup(textpopup, { maxHeight: 350, maxWidth: 300 });
 
-            newMarker.on('click', function () {
+            newMarker.on('mouseover', function () {
                 this.openPopup();
+            });
+            newMarker.on('mouseout', function () {
+                this.closePopup();
+            });
+            newMarker.on('click', function () {
+                // this.openPopup(); // Popup is now handled by mouseover
                 updateDetailsPanel(info); // Update details panel on marker click
             });
 
-            currentMarkers.push(newMarker);
+            // currentMarkers.push(newMarker); // Add to auxiliary array if needed elsewhere
+            newMarkersBatch.push(newMarker); // Add to batch for cluster group
         });
+
+        markerClusterGroup.addLayers(newMarkersBatch); // Add all new markers to the cluster group at once
+        // map.addLayer(markerClusterGroup); // Re-add if removed earlier
+        currentMarkers = newMarkersBatch; // Update currentMarkers array with the new batch
     }
 
     // Main execution block (document ready)
     $(function () {
         detailsPanel = $('#details-panel'); // Cache the details panel element
+        const artisticMovementSlider = $('#artisticMovementSlider');
+        const sliderLabelsContainer = $('#slider-labels');
+        const currentMovementDisplay = $('#current-movement-display');
+
+        // Populate slider labels
+        artisticMovements.forEach((movement, index) => {
+            const labelContainer = $('<div>').css({ // Use a container for name and date
+                'flex': '1',
+                'text-align': 'center',
+                'cursor': 'pointer',
+                'padding': '2px',
+                'border-left': index > 0 ? '1px solid #eee' : 'none',
+                'display': 'flex', // Added for vertical alignment
+                'flex-direction': 'column', // Stack name and date vertically
+                'justify-content': 'center', // Center content vertically if needed
+                'align-items': 'center' // Center content horizontally
+            });
+
+            const nameSpan = $('<span>').text(movement.name).attr('title', movement.name);
+            nameSpan.css({
+                'font-size': '0.8em', // Adjusted for potentially longer names
+                'margin-bottom': '2px' // Space between name and date
+            });
+
+            const dateSpan = $('<span>').text(`(${movement.startYear} - ${movement.endYear})`);
+            dateSpan.css({
+                'font-size': '0.6em', // Smaller text for dates
+                'font-weight': 'lighter', // Thinner text for dates
+                'color': '#555' // Slightly lighter color for dates
+            });
+
+            labelContainer.append(nameSpan).append(dateSpan);
+            
+            labelContainer.on('click', function() {
+                artisticMovementSlider.val(index).trigger('input');
+            });
+            sliderLabelsContainer.append(labelContainer);
+        });
+        
+        // Adjust slider max value based on movements
+        artisticMovementSlider.attr('max', artisticMovements.length - 1);
 
         const initialMapOptions = {
             center: [45, 10], // Adjusted center for Europe/broader view
@@ -209,15 +306,79 @@ LIMIT 100`;
         };
         createMap(initialMapOptions); // Initialize the map
 
+        // Function to update map based on selected movement URI
+        function updateMapForMovement(movementURI) {
+            if (!movementURI) {
+                // alert("Por favor, seleccione un movimiento artístico."); // No longer an alert
+                console.log("No movement URI provided, clearing map.");
+                // currentMarkers.forEach(function (marker) { // Clearing is now handled by markerClusterGroup.clearLayers()
+                //     map.removeLayer(marker);
+                // });
+                markerClusterGroup.clearLayers();
+                currentMarkers = [];
+                clearDetailsPanel(); // Clear details panel, which will also abort wiki request
+                currentMovementDisplay.text("Seleccione un movimiento");
+                return;
+            }
+
+            const selectedMovement = artisticMovements.find(m => m.uri === movementURI);
+            if (selectedMovement) {
+                currentMovementDisplay.text(selectedMovement.name);
+                // Highlight the corresponding label (optional, basic example)
+                sliderLabelsContainer.children().css('font-weight', 'normal');
+                const movementIndex = artisticMovements.findIndex(m => m.uri === movementURI);
+                if (movementIndex !== -1) {
+                     sliderLabelsContainer.children().eq(movementIndex).css('font-weight', 'bold');
+                }
+
+            }
+
+            // Use cached data
+            if (movementDataCache[movementURI]) {
+                console.log("Using cached painters for movement " + movementURI + ":", movementDataCache[movementURI]);
+                addPOIs(movementDataCache[movementURI]);
+            } else {
+                // Fallback or error handling if data not in cache (should ideally be there)
+                console.warn("Data for movement " + movementURI + " not found in cache. Fetching now.");
+                const sparqlQueryContent = queryPaintersAndArtworks(movementURI);
+                if (sparqlQueryContent) {
+                    makeSPARQLQuery(endpointUrl, sparqlQueryContent, function (data) {
+                        console.log("Painters for movement " + movementURI + ":", data.results.bindings);
+                        movementDataCache[movementURI] = data.results.bindings; // Cache it
+                        addPOIs(data.results.bindings);
+                    }).fail(function(jqXHR, textStatus, errorThrown) {
+                        console.error("Failed to fetch data for movement " + movementURI + " on demand: " + textStatus, errorThrown);
+                        // currentMarkers.forEach(function (marker) {
+                        //     map.removeLayer(marker);
+                        // });
+                        markerClusterGroup.clearLayers();
+                        currentMarkers = [];
+                        clearDetailsPanel(); // Clear details panel, which will also abort wiki request
+                    });
+                } else {
+                    // currentMarkers.forEach(function (marker) {
+                    //     map.removeLayer(marker);
+                    // });
+                    markerClusterGroup.clearLayers();
+                    currentMarkers = [];
+                    clearDetailsPanel(); // Clear details panel, which will also abort wiki request
+                }
+            }
+        }
+
         // Pre-fetch data for all movements
-        $('#artisticMovement option').each(function() {
-            const movementURI = $(this).val();
-            if (movementURI) { // Check if value is not empty
+        artisticMovements.forEach(function(movement) {
+            const movementURI = movement.uri;
+            if (movementURI) { 
                 const sparqlQueryContent = queryPaintersAndArtworks(movementURI);
                 if (sparqlQueryContent) {
                     makeSPARQLQuery(endpointUrl, sparqlQueryContent, function (data) {
                         console.log("Pre-fetched painters for movement " + movementURI + ":", data.results.bindings);
                         movementDataCache[movementURI] = data.results.bindings;
+                        // If this is the initial movement, load it after its data is fetched
+                        if (movementURI === artisticMovements[parseInt(artisticMovementSlider.val())].uri) {
+                            updateMapForMovement(movementURI);
+                        }
                     }).fail(function(jqXHR, textStatus, errorThrown) {
                         console.error("Failed to pre-fetch data for movement " + movementURI + ": " + textStatus, errorThrown);
                     });
@@ -225,61 +386,42 @@ LIMIT 100`;
             }
         });
 
-        // Event listener for the "Actualizar" button
-        $('input[type="button"]').on('click', () => {
-            const selectedMovementURI = $('#artisticMovement').val();
-            if (!selectedMovementURI) {
-                alert("Por favor, seleccione un movimiento artístico.");
-                currentMarkers.forEach(function (marker) {
-                    map.removeLayer(marker);
-                });
-                currentMarkers = [];
-                clearDetailsPanel(); // Clear details panel
-                return;
-            }
-
-            // Use cached data
-            if (movementDataCache[selectedMovementURI]) {
-                console.log("Using cached painters for movement " + selectedMovementURI + ":", movementDataCache[selectedMovementURI]);
-                addPOIs(movementDataCache[selectedMovementURI]);
-            } else {
-                // Fallback or error handling if data not in cache (should ideally be there)
-                console.warn("Data for movement " + selectedMovementURI + " not found in cache. Fetching now.");
-                // Optionally, fetch it now (as per original logic)
-                const sparqlQueryContent = queryPaintersAndArtworks(selectedMovementURI);
-                if (sparqlQueryContent) {
-                    makeSPARQLQuery(endpointUrl, sparqlQueryContent, function (data) {
-                        console.log("Painters for movement " + selectedMovementURI + ":", data.results.bindings);
-                        movementDataCache[selectedMovementURI] = data.results.bindings; // Cache it
-                        addPOIs(data.results.bindings);
-                    }).fail(function(jqXHR, textStatus, errorThrown) {
-                        console.error("Failed to fetch data for movement " + selectedMovementURI + " on demand: " + textStatus, errorThrown);
-                         // Clear markers if fetching fails
-                        currentMarkers.forEach(function (marker) {
-                            map.removeLayer(marker);
-                        });
-                        currentMarkers = [];
-                        clearDetailsPanel(); // Clear details panel on demand fetch failure
-                    });
-                } else {
-                     // Clear markers if the query is empty (e.g., error or no movement selected)
-                    currentMarkers.forEach(function (marker) {
-                        map.removeLayer(marker);
-                    });
-                    currentMarkers = [];
-                    clearDetailsPanel(); // Clear details panel
-                }
+        // Event listener for the slider
+        artisticMovementSlider.on('input change', function() { // 'input' for live update, 'change' for fallback
+            const selectedIndex = parseInt($(this).val());
+            const selectedMovement = artisticMovements[selectedIndex];
+            if (selectedMovement) {
+                updateMapForMovement(selectedMovement.uri);
             }
         });
 
-        // Automatically load data for the default selected movement
-        if ($('#artisticMovement').val()) { // Ensure a movement is actually selected
-            $('input[type="button"]').trigger('click');
+        // Automatically load data for the default selected movement (slider's initial value)
+        // This is now handled by the pre-fetch logic to ensure data is ready
+        const initialMovementIndex = parseInt(artisticMovementSlider.val());
+        if (artisticMovements[initialMovementIndex]) {
+             // Check if data is already cached (might be if pre-fetch was very fast for the first item)
+            if (movementDataCache[artisticMovements[initialMovementIndex].uri]) {
+                 updateMapForMovement(artisticMovements[initialMovementIndex].uri);
+            }
+            // Otherwise, the pre-fetch loop's success callback will trigger the updateMapForMovement
+            // for the initial movement once its data is fetched.
+            // We also ensure the display text is set initially.
+            currentMovementDisplay.text(artisticMovements[initialMovementIndex].name);
+             sliderLabelsContainer.children().eq(initialMovementIndex).css('font-weight', 'bold');
+
+        } else {
+            currentMovementDisplay.text("Seleccione un movimiento");
         }
     });
 
     function updateDetailsPanel(info) {
         if (!detailsPanel) return;
+
+        // Abort any ongoing Wikipedia request before updating the panel for a new painter
+        if (currentWikiRequest) {
+            currentWikiRequest.abort();
+            currentWikiRequest = null;
+        }
 
         const painterLabel = info.painterLabel ? info.painterLabel.value : "Artista Desconocido";
         const painterDescription = info.painterDescription ? info.painterDescription.value : "Sin descripción disponible.";
@@ -320,11 +462,11 @@ LIMIT 100`;
         const commonsPrefix = "https://upload.wikimedia.org/wikipedia/commons/";
         if (rawFinalImageUrl.startsWith(commonsPrefix) && rawFinalImageUrl !== placeholderImageUrl) {
             try {
-                const imagePathWithHash = rawFinalImageUrl.substring(commonsPrefix.length);
-                const filename = decodeURIComponent(imagePathWithHash.substring(imagePathWithHash.lastIndexOf('/') + 1));
-                const encodedImagePath = imagePathWithHash.split('/').map(segment => encodeURIComponent(segment)).join('/');
-                finalImageUrl = `${commonsPrefix}thumb/${encodedImagePath}/400px-${filename}`; 
+                const imageFileAndPath = rawFinalImageUrl.substring(commonsPrefix.length);
+                const filenameComponentForThumbnail = imageFileAndPath.substring(imageFileAndPath.lastIndexOf('/') + 1);
+                finalImageUrl = `${commonsPrefix}thumb/${imageFileAndPath}/400px-${filenameComponentForThumbnail}`;
             } catch (e) {
+                console.error("Error constructing thumbnail URL for details panel: " + rawFinalImageUrl, e);
                 finalImageUrl = rawFinalImageUrl; 
             }
         }
@@ -340,7 +482,7 @@ LIMIT 100`;
             <p><strong>Lugar de Nacimiento:</strong> ${birthPlaceLabel}</p>
             <p><em>${painterDescription}</em></p>
             <div style="text-align:center; margin-top:15px;">
-                <img src="${finalImageUrl}" alt="${artworkTitle}" style="max-width:100%; max-height:300px; border:1px solid #ccc; object-fit: contain;" />
+                <img src="${finalImageUrl}" alt="${artworkTitle}" style="max-width:100%; max-height:400px; border:1px solid #ccc; object-fit: contain;" />
                 ${artworkTitle ? `<p style="font-size:0.9em; margin-top:5px;"><em>${artworkTitle}</em></p>` : ''}
             </div>
             <div id="wikipedia-summary-container" style="margin-top:15px;">
@@ -354,12 +496,20 @@ LIMIT 100`;
         if (wikipediaArticleUrl) {
             fetchWikipediaSummary(wikipediaArticleUrl, 
                 function(summary) { // Success callback
-                    const summaryContainer = detailsPanel.find('#wikipedia-summary-container');
-                    summaryContainer.html(`<h4 style="margin-bottom:5px;">Resumen de Wikipedia:</h4><p style="font-size:0.9em;">${summary}</p><p><a href="${wikipediaArticleUrl}" target="_blank">Leer más en Wikipedia</a></p>`);
+                    // Ensure the details panel hasn't been cleared or changed for another painter
+                    if (detailsPanel.find('#wikipedia-summary-container').length > 0 && 
+                        detailsPanel.find('h2').first().text() === painterLabel) { // Basic check if still relevant
+                        const summaryContainer = detailsPanel.find('#wikipedia-summary-container');
+                        summaryContainer.html(`<h4 style="margin-bottom:5px;">Resumen de Wikipedia:</h4><p style="font-size:0.9em;">${summary}</p><p><a href="${wikipediaArticleUrl}" target="_blank">Leer más en Wikipedia</a></p>`);
+                    }
                 },
                 function(errorMsg) { // Error callback
-                    const summaryContainer = detailsPanel.find('#wikipedia-summary-container');
-                    summaryContainer.html(`<p style="font-size:0.9em; color:grey;"><em>${errorMsg}</em></p>`);
+                     // Ensure the details panel hasn't been cleared or changed for another painter
+                    if (detailsPanel.find('#wikipedia-summary-container').length > 0 && 
+                        detailsPanel.find('h2').first().text() === painterLabel) { // Basic check if still relevant
+                        const summaryContainer = detailsPanel.find('#wikipedia-summary-container');
+                        summaryContainer.html(`<p style="font-size:0.9em; color:grey;"><em>${errorMsg}</em></p>`);
+                    }
                 }
             );
         } else {
@@ -373,7 +523,8 @@ LIMIT 100`;
             if (callbackError) callbackError("No Wikipedia URL provided.");
             return;
         }
-        // Extract title from URL. Example: https://es.wikipedia.org/wiki/Leonardo_da_Vinci -> Leonardo_da_Vinci
+        // Removed: Defensive abort logic, as updateDetailsPanel handles this.
+
         let pageTitle = pageUrl.substring(pageUrl.lastIndexOf('/') + 1);
         
         try {
@@ -392,7 +543,7 @@ LIMIT 100`;
 
         const WIKIPEDIA_API_ENDPOINT = 'https://es.wikipedia.org/w/api.php';
 
-        $.ajax({
+        const thisSpecificRequest = $.ajax({
             url: WIKIPEDIA_API_ENDPOINT,
             data: {
                 action: 'query',
@@ -406,30 +557,61 @@ LIMIT 100`;
             },
             dataType: 'jsonp', // Using jsonp for cross-domain requests
             success: function(response) {
-                try {
-                    const pages = response.query.pages;
-                    const pageId = Object.keys(pages)[0]; // Get the first page ID
-                    if (pageId && pages[pageId].extract) {
-                        if (callbackSuccess) callbackSuccess(pages[pageId].extract);
-                    } else if (pages[pageId] && pages[pageId].missing !== undefined) {
-                        if (callbackError) callbackError("La página de Wikipedia no fue encontrada o no tiene resumen.");
-                    } else {
-                        if (callbackError) callbackError("No se pudo extraer el resumen de Wikipedia.");
+                const wasThisTheCurrentRequest = (currentWikiRequest === thisSpecificRequest);
+
+                if (wasThisTheCurrentRequest) {
+                    currentWikiRequest = null; // This request (which was current) is now finished (successfully).
+                    try {
+                        const pages = response.query.pages;
+                        const pageId = Object.keys(pages)[0]; // Get the first page ID
+                        if (pageId && pages[pageId].extract) {
+                            if (callbackSuccess) callbackSuccess(pages[pageId].extract);
+                        } else if (pages[pageId] && pages[pageId].missing !== undefined) {
+                            if (callbackError) callbackError("La página de Wikipedia no fue encontrada o no tiene resumen.");
+                        } else {
+                            if (callbackError) callbackError("No se pudo extraer el resumen de Wikipedia.");
+                        }
+                    } catch (e) {
+                        console.error("Error parsing Wikipedia API response for '" + pageTitle + "':", e);
+                        if (callbackError) callbackError("Error al procesar la respuesta de Wikipedia.");
                     }
-                } catch (e) {
-                    console.error("Error parsing Wikipedia API response:", e);
-                    if (callbackError) callbackError("Error al procesar la respuesta de Wikipedia.");
+                } else {
+                    console.log("Success response for a superseded Wikipedia request for '" + pageTitle + "'. UI not updated.");
                 }
             },
-            error: function(jqXHR, textStatus, errorThrown) {
-                console.error("Wikipedia API request failed: " + textStatus, errorThrown);
-                if (callbackError) callbackError("No se pudo contactar con Wikipedia para obtener el resumen.");
+            error: function(jqXHR_this, textStatus, errorThrown) { // jqXHR_this is thisSpecificRequest
+                const wasThisTheCurrentRequest = (currentWikiRequest === thisSpecificRequest);
+
+                if (wasThisTheCurrentRequest) {
+                    currentWikiRequest = null; // This request (which was current) is now finished (with an error).
+                }
+
+                if (textStatus === 'abort') {
+                    console.log("Wikipedia request for '" + pageTitle + "' was aborted.");
+                    // Do not call callbackError for aborts, as it's an intentional cancellation.
+                } else {
+                    // It's a genuine error (not an abort).
+                    console.error("Wikipedia API request for '" + pageTitle + "' failed: " + textStatus, errorThrown);
+                    if (wasThisTheCurrentRequest) {
+                        // Only update the UI with an error if this failed request was the one the user was waiting for.
+                        if (callbackError) callbackError("No se pudo contactar con Wikipedia para obtener el resumen.");
+                    } else {
+                        // Error for an old/superseded request. Log it but don't show to user.
+                        console.log("Error belonged to a superseded Wikipedia request for '" + pageTitle + "'. UI not updated with this error.");
+                    }
+                }
             }
         });
+        currentWikiRequest = thisSpecificRequest; // Assign to the global tracker
     }
 
     function clearDetailsPanel() {
         if (!detailsPanel) return;
+        // Abort any ongoing Wikipedia request when clearing the panel
+        if (currentWikiRequest) {
+            currentWikiRequest.abort();
+            currentWikiRequest = null;
+        }
         detailsPanel.html('<p>Haz clic en un marcador en el mapa para ver los detalles aquí.</p>');
     }
 

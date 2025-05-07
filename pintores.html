@@ -43,27 +43,23 @@
         integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
         crossorigin=""/>
     
+      <!-- Leaflet.markercluster CSS -->
+      <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+      <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+
    </head>
    <body>
       <h1>Pintores Famosos y sus Raíces</h1>
       <p>Selecciona un movimiento artístico para ver pintores asociados y sus lugares de nacimiento.</p>
-      <select name="artisticMovement" id="artisticMovement" style="margin-right: 10px;">
-        <option value="">Seleccione un movimiento...</option>
-        <option value="http://www.wikidata.org/entity/Q134147" selected>Pop Art</option>
-        <option value="http://www.wikidata.org/entity/Q177725">Expresionismo Abstracto</option>
-        <option value="http://www.wikidata.org/entity/Q39427">Surrealismo</option>
-        <option value="http://www.wikidata.org/entity/Q42934">Cubismo</option>
-        <option value="http://www.wikidata.org/entity/Q80113">Expresionismo</option>
-        <option value="http://www.wikidata.org/entity/Q34636">Art Nouveau</option>
-        <option value="http://www.wikidata.org/entity/Q166713">Postimpresionismo</option>
-        <option value="http://www.wikidata.org/entity/Q40415">Impresionismo</option>
-        <option value="http://www.wikidata.org/entity/Q37068">Romanticismo</option>
-        <option value="http://www.wikidata.org/entity/Q14378">Neoclasicismo</option>
-        <option value="http://www.wikidata.org/entity/Q122960">Rococó</option>
-        <option value="http://www.wikidata.org/entity/Q37853">Barroco</option>
-        <option value="http://www.wikidata.org/entity/Q4692">Renacimiento</option>
-      </select>
-      <input type="button" value="Actualizar"></input>
+      <div id="slider-container" style="margin-bottom: 20px; position: relative;">
+        <div id="slider-labels" style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+          <!-- Labels will be populated by JavaScript -->
+        </div>
+        <input type="range" id="artisticMovementSlider" name="artisticMovementSlider" min="0" max="12" value="0" style="width: 100%;">
+        <div id="current-movement-display" style="text-align: center; margin-top: 5px; font-weight: bold;">
+          <!-- Current movement will be displayed here -->
+        </div>
+      </div>
       <div id="main-content-area">
         <div id="map-container">
              <div id="map" style="height: 100%;"></div> <!-- Leaflet target, ensure it fills map-container -->
@@ -78,6 +74,9 @@
         integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
         crossorigin=""></script>
     
+    <!-- Leaflet.markercluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+
     <script src="map_script.js"></script>
    </body>
 </html>
