@@ -1,0 +1,806 @@
+<html lang="es-ES" xmlns="http://www.w3.org/1999/xhtml">
+   <head profile="http://gmpg.org/xfn/11">
+    <!-- SEE https://asmaloney.com/2014/01/code/creating-an-interactive-map-with-leaflet-and-openstreetmap/ -->
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <style>
+        html {
+            height: 100%;
+        }
+        body {
+          min-height: 100vh;
+          margin: 0;
+          font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+          background-color: #1e1e1e;
+          color: #e0e0e0;
+          font-size: 25px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        #page-wrapper {
+          width: 95%;
+          max-width: 1800px;
+          height: 90vh;
+          display: flex;
+          flex-direction: column;
+          background-color: #2c2c2c;
+          padding: 20px;
+          box-sizing: border-box;
+          border-radius: 10px;
+          overflow-y: auto;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+        }
+        #map {
+          height: 100%;
+          border-radius: 8px;
+        }
+        #main-content-area {
+          display: flex;
+          flex-grow: 1;
+          margin: 0;
+          gap: 20px;
+          min-height: 0;
+        }
+        #map-container {
+          flex: 3;
+          border: 1px solid #444;
+          border-radius: 8px;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+          background-color: #2c2c2c;
+          padding: 5px;
+        }
+        #details-panel {
+          flex: 2;
+          padding: 20px;
+          border: 1px solid #444;
+          border-radius: 8px;
+          overflow-y: auto;
+          background-color: #2c2c2c;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+          font-size: 0.6em;
+        }
+        h1 {
+          text-align: center;
+          color: #bb86fc;
+          padding: 20px 0;
+          margin: 0 0 10px 0;
+          font-size: 2.2em;
+          font-weight: 300;
+        }
+        #intro-paragraph {
+            text-align: center;
+            margin: 0 0 15px 0;
+            color: #b0b0b0;
+        }
+        p {
+          line-height: 1.6;
+        }
+        #slider-container {
+          width: 95%;
+          margin: 0 auto 25px auto;
+          padding: 15px;
+          background-color: #2c2c2c;
+          border-radius: 8px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+          position: relative;
+        }
+        #slider-labels {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 8px;
+        }
+        #slider-labels > div {
+          font-size: 0.75em;
+          color: #c0c0c0;
+          cursor: pointer;
+          padding: 5px;
+          border-radius: 4px;
+          transition: background-color 0.3s ease;
+        }
+        #slider-labels > div:hover {
+          background-color: #3f3f3f;
+        }
+        #slider-labels > div > span:first-child {
+            font-weight: 500;
+        }
+        #slider-labels > div > span:last-child {
+            font-size: 0.9em;
+            color: #999999;
+        }
+        input[type="range"] {
+          -webkit-appearance: none;
+          width: 100%;
+          height: 8px;
+          background: #4a4a4a;
+          border-radius: 5px;
+          outline: none;
+          opacity: 0.9;
+          -webkit-transition: .2s;
+          transition: opacity .2s;
+          cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          background: #bb86fc;
+          border-radius: 50%;
+          cursor: pointer;
+          border: 2px solid #2c2c2c;
+          box-shadow: 0 0 2px rgba(0,0,0,0.5);
+        }
+        input[type="range"]::-moz-range-thumb {
+          width: 18px;
+          height: 18px;
+          background: #bb86fc;
+          border-radius: 50%;
+          cursor: pointer;
+          border: 2px solid #2c2c2c;
+          box-shadow: 0 0 2px rgba(0,0,0,0.5);
+        }
+        #current-movement-display {
+          text-align: center;
+          margin-top: 10px;
+          font-weight: 600;
+          color: #bb86fc;
+          font-size: 1.1em;
+        }
+        #details-panel h2 {
+          color: #bb86fc;
+          font-size: 1.6em;
+          margin-bottom: 10px;
+        }
+        #details-panel p {
+          font-size: 0.95em;
+          margin-bottom: 8px;
+          color: #d0d0d0;
+        }
+        #details-panel strong {
+          color: #e0e0e0;
+        }
+        #details-panel em {
+          color: #a0a0a0;
+        }
+        #details-panel img {
+          border-radius: 4px;
+          margin-top: 10px;
+          border: 1px solid #555;
+        }
+        #wikipedia-summary-container h4 {
+            margin-top: 15px;
+            margin-bottom: 5px;
+            color: #bb86fc;
+            font-size: 1.2em;
+        }
+        #wikipedia-summary-container p {
+            color: #d0d0d0;
+            font-size: 0.9em;
+        }
+        #wikipedia-summary-container p a {
+            color: #8ab4f8;
+            text-decoration: none;
+        }
+        #wikipedia-summary-container p a:hover {
+            text-decoration: underline;
+        }
+      </style> 
+
+      <script 
+        type='text/javascript' 
+        src='http://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js'>
+      </script>
+
+       <link  rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin=""/>
+    
+      <!-- Leaflet.markercluster CSS -->
+      <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+      <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+
+   </head>
+   <body>
+      <div id="page-wrapper">
+        <h1>Pintores Famosos y sus Raíces</h1>
+        <p id="intro-paragraph">Selecciona un movimiento artístico para ver pintores asociados y sus lugares de nacimiento.</p>
+        <div id="slider-container">
+          <div id="slider-labels" style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <!-- Labels will be populated by JavaScript -->
+          </div>
+          <input type="range" id="artisticMovementSlider" name="artisticMovementSlider" min="0" max="12" value="0" style="width: 100%;">
+          <div id="current-movement-display" style="text-align: center; margin-top: 5px; font-weight: bold;">
+            <!-- Current movement will be displayed here -->
+          </div>
+        </div>
+        <div id="main-content-area">
+          <div id="map-container">
+               <div id="map" style="height: 100%;"></div>
+          </div>
+          <div id="details-panel">
+            <p>Haz clic en un marcador en el mapa para ver los detalles aquí.</p>
+          </div>
+        </div>
+      </div>
+    
+     <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+    
+    <!-- Leaflet.markercluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+
+    <script>
+(function () {
+    const endpointUrl = 'https://query.wikidata.org/sparql';
+    let map;
+    let currentMarkers = []; 
+    let markerClusterGroup; 
+    let movementDataCache = {}; 
+    let detailsPanel; 
+    let currentWikiRequest = null; 
+
+    const artisticMovements = [
+        { name: "Pop Art", uri: "http://www.wikidata.org/entity/Q134147", startYear: "1950s", endYear: "1970s" },
+        { name: "Expresionismo Abstracto", uri: "http://www.wikidata.org/entity/Q177725", startYear: "1940s", endYear: "1960s" },
+        { name: "Surrealismo", uri: "http://www.wikidata.org/entity/Q39427", startYear: "1920s", endYear: "1950s" },
+        { name: "Cubismo", uri: "http://www.wikidata.org/entity/Q42934", startYear: "1900s", endYear: "1920s" },
+        { name: "Expresionismo", uri: "http://www.wikidata.org/entity/Q80113", startYear: "1900s", endYear: "1930s" },
+        { name: "Art Nouveau", uri: "http://www.wikidata.org/entity/Q34636", startYear: "1890s", endYear: "1910s" },
+        { name: "Postimpresionismo", uri: "http://www.wikidata.org/entity/Q166713", startYear: "1880s", endYear: "1900s" },
+        { name: "Impresionismo", uri: "http://www.wikidata.org/entity/Q40415", startYear: "1860s", endYear: "1890s" },
+        { name: "Romanticismo", uri: "http://www.wikidata.org/entity/Q37068", startYear: "1790s", endYear: "1850s" },
+        { name: "Neoclasicismo", uri: "http://www.wikidata.org/entity/Q14378", startYear: "1760s", endYear: "1830s" },
+        { name: "Rococó", uri: "http://www.wikidata.org/entity/Q122960", startYear: "1730s", endYear: "1770s" },
+        { name: "Barroco", uri: "http://www.wikidata.org/entity/Q37853", startYear: "1600s", endYear: "1750s" },
+        { name: "Renacimiento", uri: "http://www.wikidata.org/entity/Q4692", startYear: "1300s", endYear: "1600s" }
+    ];
+
+    function makeSPARQLQuery(endpointUrl, sparqlQuery, doneCallback) {
+        var settings = {
+            headers: { Accept: 'application/sparql-results+json' },
+            data: { query: sparqlQuery }
+        };
+        return $.ajax(endpointUrl, settings).then(doneCallback);
+    }
+
+    function queryPaintersAndArtworks(artisticMovementURI) {
+        if (!artisticMovementURI) {
+            console.warn("queryPaintersAndArtworks called without an artisticMovementURI");
+            return ""; 
+        }
+        const sparqlQuery = `SELECT
+?painter ?painterLabel ?painterDescription
+?placeOfBirthLabel
+?lat ?lon
+?dateOfBirth ?dateOfDeath
+(SAMPLE(?artworkLabel) AS ?sampledArtworkLabel)
+(SAMPLE(?artworkImage) AS ?sampledArtworkImage)
+(SAMPLE(?painterImage) AS ?sampledPainterImage)
+(SAMPLE(?article) AS ?wikipediaArticle) # Added to get Wikipedia article URL
+WHERE {
+VALUES ?movement { <${artisticMovementURI}> } # Filter by selected movement
+?painter wdt:P31 wd:Q5; # instance of human
+         wdt:P106 wd:Q1028181; # occupation painter
+         wdt:P19 ?placeOfBirth;  # place of birth
+         wdt:P135 ?movement.   # artistic movement
+
+?placeOfBirth p:P625/psv:P625 [ # coordinate location
+    wikibase:geoLatitude ?lat;
+    wikibase:geoLongitude ?lon
+].
+
+OPTIONAL { ?painter wdt:P569 ?dateOfBirth. }
+OPTIONAL { ?painter wdt:P570 ?dateOfDeath. }
+
+OPTIONAL {
+  ?artwork wdt:P170 ?painter; # artwork created by painter
+           wdt:P31/wdt:P279* wd:Q11060274; # instance of visual artwork (or subclass)
+           wdt:P18 ?artworkImage.
+  OPTIONAL { ?artwork rdfs:label ?artworkLabel FILTER(LANG(?artworkLabel) IN ("es", "en")). }
+}
+
+OPTIONAL { ?painter wdt:P18 ?painterImage. } # Image of the painter
+
+OPTIONAL { # To get the Spanish Wikipedia article URL
+  ?article schema:about ?painter ;
+           schema:inLanguage "es" ;
+           schema:isPartOf <https://es.wikipedia.org/> .
+}
+
+SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],es,en". }
+}
+GROUP BY ?painter ?painterLabel ?painterDescription ?placeOfBirthLabel ?lat ?lon ?dateOfBirth ?dateOfDeath
+ORDER BY RAND()
+LIMIT 100`;
+        return sparqlQuery;
+    }
+
+    // DOM Manipulation and UI Functions (addOptions is not used currently)
+    /* function addOptions(domElement, json) {
+        var select = document.getElementsByName(domElement)[0];
+        json.forEach(function(info) {
+            var itemVal = info.item.value; // Generic item value
+            var itemLabel = info.itemLabel.value; // Generic item label
+            var option = document.createElement("option");
+            option.text = itemLabel;
+            option.value = itemVal;
+            select.add(option);
+        });
+    } */
+
+    // Map Related Functions
+    function createMap(options) {
+        map = L.map('map', options);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png?{foo}', {
+            foo: 'bar',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        markerClusterGroup = L.markerClusterGroup({ maxClusterRadius: 40 });
+        map.addLayer(markerClusterGroup);
+    }
+
+    function addPOIs(pois) {
+        markerClusterGroup.clearLayers();
+        currentMarkers = []; 
+
+        // Temporarily remove the cluster group to prevent issues if addLayer is slow with many markers
+        // map.removeLayer(markerClusterGroup); 
+        // ^ This line can sometimes help but let's try without it first. Add back if clearing/adding is still slow.
+
+        clearDetailsPanel();
+
+        const newMarkersBatch = []; 
+
+        pois.forEach(function (info) {
+            const commonsPrefix = "https://upload.wikimedia.org/wikipedia/commons/";
+
+            const painterLabel = info.painterLabel ? info.painterLabel.value : "Artista Desconocido";
+            let displayLetter = "?";
+            if (painterLabel === "Artista Desconocido") {
+                displayLetter = "A";
+            } else {
+                const nameParts = painterLabel.split(' ');
+                let nameForLetter = painterLabel; 
+                if (nameParts.length > 1) {
+                    nameForLetter = nameParts[nameParts.length - 1]; 
+                } else if (nameParts.length === 1 && nameParts[0] !== "") {
+                    nameForLetter = nameParts[0]; 
+                }
+                if (nameForLetter.length > 0) {
+                    displayLetter = nameForLetter.charAt(0).toUpperCase();
+                }
+            }
+
+            const letterIconHtml = 
+                `<div style="width: 38px; height: 38px; border-radius: 50%; background-color: #4A90E2; color: white; border: 1px solid #FFFFFF; box-shadow: 0 0 3px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; font-size:18px; font-weight:bold; font-family: Arial, sans-serif;">` +
+                `${displayLetter}` +
+                `</div>`;
+
+            const customMarkerIcon = L.divIcon({
+                html: letterIconHtml,
+                className: 'custom-map-letter-icon', 
+                iconSize: [40, 40],      
+                iconAnchor: [20, 40],    
+                popupAnchor: [0, -20]   
+            });
+
+            const painterDescription = info.painterDescription ? info.painterDescription.value : "";
+            const birthPlaceLabel = info.placeOfBirthLabel ? info.placeOfBirthLabel.value : "Lugar de nacimiento desconocido";
+
+            const dobValue = info.dateOfBirth ? info.dateOfBirth.value : null;
+            const dodValue = info.dateOfDeath ? info.dateOfDeath.value : null;
+
+            let birthDateFormatted = "";
+            if (dobValue) {
+                try {
+                    birthDateFormatted = new Date(dobValue).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+                } catch (e) {
+                    console.error("Error formatting birth date:", dobValue, e);
+                }
+            }
+
+            let deathDateFormatted = "";
+            if (dodValue) {
+                try {
+                    deathDateFormatted = new Date(dodValue).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+                } catch (e) {
+                    console.error("Error formatting death date:", dodValue, e);
+                }
+            }
+
+            let lifespan = "";
+            if (birthDateFormatted && deathDateFormatted) {
+                lifespan = `(${birthDateFormatted} - ${deathDateFormatted})`;
+            } else if (birthDateFormatted) {
+                lifespan = `(Nacido: ${birthDateFormatted})`;
+            }
+
+            const artworkImageUrl = info.sampledArtworkImage ? info.sampledArtworkImage.value : null;
+            const painterImageUrl = info.sampledPainterImage ? info.sampledPainterImage.value : null;
+            const placeholderImageUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/640px-Placeholder_view_vector.svg.png';
+            let rawFinalImageUrl = artworkImageUrl || painterImageUrl || placeholderImageUrl;
+            let finalImageUrl = rawFinalImageUrl;
+
+            if (rawFinalImageUrl.startsWith(commonsPrefix) && rawFinalImageUrl !== placeholderImageUrl) {
+                try {
+                    const imageFileAndPath = rawFinalImageUrl.substring(commonsPrefix.length);
+                    const filenameComponentForThumbnail = imageFileAndPath.substring(imageFileAndPath.lastIndexOf('/') + 1);
+                    finalImageUrl = `${commonsPrefix}thumb/${imageFileAndPath}/300px-${filenameComponentForThumbnail}`;
+                } catch (e) {
+                    console.error("Error constructing thumbnail URL for popup: " + rawFinalImageUrl, e);
+                    finalImageUrl = rawFinalImageUrl; 
+                }
+            }
+
+            if (finalImageUrl !== placeholderImageUrl) {
+                const preloader = new Image();
+                preloader.src = finalImageUrl;
+            }
+
+            let artworkTitle = info.sampledArtworkLabel ? info.sampledArtworkLabel.value : "";
+            if (!artworkTitle && artworkImageUrl) artworkTitle = "Obra destacada";
+            else if (!artworkTitle && painterImageUrl && !artworkImageUrl) artworkTitle = "Retrato del artista";
+            else if (!artworkTitle && !artworkImageUrl && !painterImageUrl) artworkTitle = "Información visual no disponible";
+
+            const textpopup = `
+<div id="content" style="font-family: sans-serif; max-width:300px;">
+    <h3 style="margin-top:0; margin-bottom: 5px;">${painterLabel}</h3>
+    ${lifespan ? `<p style="font-size:0.8em; margin-top:0; margin-bottom: 5px;">${lifespan}</p>` : ''}
+    <p style="font-size:0.9em; margin-top:0; margin-bottom: 5px;"><strong>Nacido en:</strong> ${birthPlaceLabel}</p>
+    ${painterDescription ? `<p style="font-size:0.85em; margin-top:0; margin-bottom:10px; font-style:italic;">${painterDescription}</p>` : ''}
+</div>`;
+
+            const newMarker = L.marker([info.lat.value, info.lon.value], { icon: customMarkerIcon })
+                .bindPopup(textpopup, { maxHeight: 350, maxWidth: 300 });
+
+            newMarker.on('mouseover', function () {
+                this.openPopup();
+            });
+            newMarker.on('mouseout', function () {
+                this.closePopup();
+            });
+            newMarker.on('click', function () {
+                updateDetailsPanel(info); 
+            });
+
+            newMarkersBatch.push(newMarker); 
+        });
+
+        markerClusterGroup.addLayers(newMarkersBatch); 
+        currentMarkers = newMarkersBatch; 
+    }
+
+    $(function () {
+        detailsPanel = $('#details-panel'); 
+        const artisticMovementSlider = $('#artisticMovementSlider');
+        const sliderLabelsContainer = $('#slider-labels');
+        const currentMovementDisplay = $('#current-movement-display');
+
+        artisticMovements.forEach((movement, index) => {
+            const labelContainer = $('<div>').css({ 
+                'flex': '1',
+                'text-align': 'center',
+                'cursor': 'pointer',
+                'padding': '2px',
+                'border-left': index > 0 ? '1px solid #eee' : 'none',
+                'display': 'flex', 
+                'flex-direction': 'column', 
+                'justify-content': 'center', 
+                'align-items': 'center' 
+            });
+
+            const nameSpan = $('<span>').text(movement.name).attr('title', movement.name);
+            nameSpan.css({
+                'font-size': '0.8em', 
+                'margin-bottom': '2px' 
+            });
+
+            const dateSpan = $('<span>').text(`(${movement.startYear} - ${movement.endYear})`);
+            dateSpan.css({
+                'font-size': '0.6em', 
+                'font-weight': 'lighter', 
+                'color': '#555' 
+            });
+
+            labelContainer.append(nameSpan).append(dateSpan);
+            
+            labelContainer.on('click', function() {
+                artisticMovementSlider.val(index).trigger('input');
+            });
+            sliderLabelsContainer.append(labelContainer);
+        });
+        
+        artisticMovementSlider.attr('max', artisticMovements.length - 1);
+
+        const initialMapOptions = {
+            center: [45, 10], 
+            minZoom: 2,
+            zoom: 4 
+        };
+        createMap(initialMapOptions); 
+
+        function updateMapForMovement(movementURI) {
+            if (!movementURI) {
+                console.log("No movement URI provided, clearing map.");
+                markerClusterGroup.clearLayers();
+                currentMarkers = [];
+                clearDetailsPanel(); 
+                currentMovementDisplay.text("Seleccione un movimiento");
+                return;
+            }
+
+            const selectedMovement = artisticMovements.find(m => m.uri === movementURI);
+            if (selectedMovement) {
+                currentMovementDisplay.text(selectedMovement.name);
+                sliderLabelsContainer.children().css('font-weight', 'normal');
+                const movementIndex = artisticMovements.findIndex(m => m.uri === movementURI);
+                if (movementIndex !== -1) {
+                     sliderLabelsContainer.children().eq(movementIndex).css('font-weight', 'bold');
+                }
+
+            }
+
+            if (movementDataCache[movementURI]) {
+                console.log("Using cached painters for movement " + movementURI + ":", movementDataCache[movementURI]);
+                addPOIs(movementDataCache[movementURI]);
+            } else {
+                console.warn("Data for movement " + movementURI + " not found in cache. Fetching now.");
+                const sparqlQueryContent = queryPaintersAndArtworks(movementURI);
+                if (sparqlQueryContent) {
+                    makeSPARQLQuery(endpointUrl, sparqlQueryContent, function (data) {
+                        console.log("Painters for movement " + movementURI + ":", data.results.bindings);
+                        movementDataCache[movementURI] = data.results.bindings; 
+                        addPOIs(data.results.bindings);
+                    }).fail(function(jqXHR, textStatus, errorThrown) {
+                        console.error("Failed to fetch data for movement " + movementURI + " on demand: " + textStatus, errorThrown);
+                        markerClusterGroup.clearLayers();
+                        currentMarkers = [];
+                        clearDetailsPanel(); 
+                    });
+                } else {
+                    markerClusterGroup.clearLayers();
+                    currentMarkers = [];
+                    clearDetailsPanel(); 
+                }
+            }
+        }
+
+        artisticMovements.forEach(function(movement) {
+            const movementURI = movement.uri;
+            if (movementURI) { 
+                const sparqlQueryContent = queryPaintersAndArtworks(movementURI);
+                if (sparqlQueryContent) {
+                    makeSPARQLQuery(endpointUrl, sparqlQueryContent, function (data) {
+                        console.log("Pre-fetched painters for movement " + movementURI + ":", data.results.bindings);
+                        movementDataCache[movementURI] = data.results.bindings;
+                        if (movementURI === artisticMovements[parseInt(artisticMovementSlider.val())].uri) {
+                            updateMapForMovement(movementURI);
+                        }
+                    }).fail(function(jqXHR, textStatus, errorThrown) {
+                        console.error("Failed to pre-fetch data for movement " + movementURI + ": " + textStatus, errorThrown);
+                    });
+                }
+            }
+        });
+
+        artisticMovementSlider.on('input change', function() { 
+            const selectedIndex = parseInt($(this).val());
+            const selectedMovement = artisticMovements[selectedIndex];
+            if (selectedMovement) {
+                updateMapForMovement(selectedMovement.uri);
+            }
+        });
+
+        const initialMovementIndex = parseInt(artisticMovementSlider.val());
+        if (artisticMovements[initialMovementIndex]) {
+            if (movementDataCache[artisticMovements[initialMovementIndex].uri]) {
+                 updateMapForMovement(artisticMovements[initialMovementIndex].uri);
+            }
+            currentMovementDisplay.text(artisticMovements[initialMovementIndex].name);
+             sliderLabelsContainer.children().eq(initialMovementIndex).css('font-weight', 'bold');
+
+        } else {
+            currentMovementDisplay.text("Seleccione un movimiento");
+        }
+    });
+
+    function updateDetailsPanel(info) {
+        if (!detailsPanel) return;
+
+        if (currentWikiRequest) {
+            currentWikiRequest.abort();
+            currentWikiRequest = null;
+        }
+
+        const painterLabel = info.painterLabel ? info.painterLabel.value : "Artista Desconocido";
+        const painterDescription = info.painterDescription ? info.painterDescription.value : "Sin descripción disponible.";
+        const birthPlaceLabel = info.placeOfBirthLabel ? info.placeOfBirthLabel.value : "Lugar de nacimiento desconocido";
+
+        const dobValue = info.dateOfBirth ? info.dateOfBirth.value : null;
+        const dodValue = info.dateOfDeath ? info.dateOfDeath.value : null;
+
+        let birthDateFormatted = "Fecha de nacimiento desconocida";
+        if (dobValue) {
+            try {
+                birthDateFormatted = new Date(dobValue).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+            } catch (e) { /* console.error("Error formatting birth date for details panel:", dobValue, e); */ }
+        }
+
+        let deathDateFormatted = "Fecha de fallecimiento desconocida";
+        if (dodValue) {
+            try {
+                deathDateFormatted = new Date(dodValue).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+            } catch (e) { /* console.error("Error formatting death date for details panel:", dodValue, e); */ }
+        }
+        
+        let lifespanDetail = "";
+        if (dobValue && dodValue) {
+            lifespanDetail = `${birthDateFormatted} - ${deathDateFormatted}`;
+        } else if (dobValue) {
+            lifespanDetail = `Nacido/a: ${birthDateFormatted}`;
+        } else {
+            lifespanDetail = "Periodo vital desconocido";
+        }
+
+        const artworkImageUrl = info.sampledArtworkImage ? info.sampledArtworkImage.value : null;
+        const painterImageUrl = info.sampledPainterImage ? info.sampledPainterImage.value : null;
+        const placeholderImageUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/640px-Placeholder_view_vector.svg.png';
+        let rawFinalImageUrl = artworkImageUrl || painterImageUrl || placeholderImageUrl;
+        let finalImageUrl = rawFinalImageUrl;
+
+        const commonsPrefix = "https://upload.wikimedia.org/wikipedia/commons/";
+        if (rawFinalImageUrl.startsWith(commonsPrefix) && rawFinalImageUrl !== placeholderImageUrl) {
+            try {
+                const imageFileAndPath = rawFinalImageUrl.substring(commonsPrefix.length);
+                const filenameComponentForThumbnail = imageFileAndPath.substring(imageFileAndPath.lastIndexOf('/') + 1);
+                finalImageUrl = `${commonsPrefix}thumb/${imageFileAndPath}/400px-${filenameComponentForThumbnail}`;
+            } catch (e) {
+                console.error("Error constructing thumbnail URL for details panel: " + rawFinalImageUrl, e);
+                finalImageUrl = rawFinalImageUrl; 
+            }
+        }
+
+        let artworkTitle = info.sampledArtworkLabel ? info.sampledArtworkLabel.value : "";
+        if (!artworkTitle && artworkImageUrl) artworkTitle = "Obra destacada";
+        else if (!artworkTitle && painterImageUrl && !artworkImageUrl) artworkTitle = "Retrato del artista";
+        else if (!artworkTitle && !artworkImageUrl && !painterImageUrl) artworkTitle = "Información visual no disponible";
+        
+        const detailsHtml = `
+            <h2 style="margin-top:0;">${painterLabel}</h2>
+            <p><strong>Periodo Vital:</strong> ${lifespanDetail}</p>
+            <p><strong>Lugar de Nacimiento:</strong> ${birthPlaceLabel}</p>
+            <p><em>${painterDescription}</em></p>
+            <div style="text-align:center; margin-top:15px;">
+                <img src="${finalImageUrl}" alt="${artworkTitle}" style="max-width:100%; max-height:400px; border:1px solid #ccc; object-fit: contain;" />
+                ${artworkTitle ? `<p style="font-size:0.9em; margin-top:5px;"><em>${artworkTitle}</em></p>` : ''}
+            </div>
+            <div id="wikipedia-summary-container" style="margin-top:15px;">
+                <p><em>Cargando resumen de Wikipedia...</em></p>
+            </div>
+        `;
+        detailsPanel.html(detailsHtml);
+
+        const wikipediaArticleUrl = info.wikipediaArticle ? info.wikipediaArticle.value : null;
+        if (wikipediaArticleUrl) {
+            fetchWikipediaSummary(wikipediaArticleUrl, 
+                function(summary) { 
+                    if (detailsPanel.find('#wikipedia-summary-container').length > 0 && 
+                        detailsPanel.find('h2').first().text() === painterLabel) { 
+                        const summaryContainer = detailsPanel.find('#wikipedia-summary-container');
+                        summaryContainer.html(`<h4 style="margin-bottom:5px;">Resumen de Wikipedia:</h4><p style="font-size:0.9em;">${summary}</p><p><a href="${wikipediaArticleUrl}" target="_blank">Leer más en Wikipedia</a></p>`);
+                    }
+                },
+                function(errorMsg) { 
+                    if (detailsPanel.find('#wikipedia-summary-container').length > 0 && 
+                        detailsPanel.find('h2').first().text() === painterLabel) { 
+                        const summaryContainer = detailsPanel.find('#wikipedia-summary-container');
+                        summaryContainer.html(`<p style="font-size:0.9em; color:grey;"><em>${errorMsg}</em></p>`);
+                    }
+                }
+            );
+        } else {
+            const summaryContainer = detailsPanel.find('#wikipedia-summary-container');
+            summaryContainer.html('<p style="font-size:0.9em; color:grey;"><em>No se encontró artículo de Wikipedia para este pintor.</em></p>');
+        }
+    }
+
+    function fetchWikipediaSummary(pageUrl, callbackSuccess, callbackError) {
+        if (!pageUrl) {
+            if (callbackError) callbackError("No Wikipedia URL provided.");
+            return;
+        }
+
+        let pageTitle = pageUrl.substring(pageUrl.lastIndexOf('/') + 1);
+        
+        try {
+            pageTitle = decodeURIComponent(pageTitle);
+        } catch (e) {
+            console.error("Failed to decode page title:", pageTitle, e);
+            if (callbackError) callbackError("Título de Wikipedia malformado o inválido.");
+            return;
+        }
+
+        if (!pageTitle) { 
+             if (callbackError) callbackError("Could not extract title from Wikipedia URL.");
+            return;
+        }
+
+        const WIKIPEDIA_API_ENDPOINT = 'https://es.wikipedia.org/w/api.php';
+
+        const thisSpecificRequest = $.ajax({
+            url: WIKIPEDIA_API_ENDPOINT,
+            data: {
+                action: 'query',
+                format: 'json',
+                prop: 'extracts',
+                exintro: true,
+                explaintext: true,
+                redirects: 1,
+                titles: pageTitle,
+                origin: '*'
+            },
+            dataType: 'jsonp', 
+            success: function(response) {
+                const wasThisTheCurrentRequest = (currentWikiRequest === thisSpecificRequest);
+
+                if (wasThisTheCurrentRequest) {
+                    currentWikiRequest = null; 
+                    try {
+                        const pages = response.query.pages;
+                        const pageId = Object.keys(pages)[0]; 
+                        if (pageId && pages[pageId].extract) {
+                            if (callbackSuccess) callbackSuccess(pages[pageId].extract);
+                        } else if (pages[pageId] && pages[pageId].missing !== undefined) {
+                            if (callbackError) callbackError("La página de Wikipedia no fue encontrada o no tiene resumen.");
+                        } else {
+                            if (callbackError) callbackError("No se pudo extraer el resumen de Wikipedia.");
+                        }
+                    } catch (e) {
+                        console.error("Error parsing Wikipedia API response for '" + pageTitle + "':", e);
+                        if (callbackError) callbackError("Error al procesar la respuesta de Wikipedia.");
+                    }
+                } else {
+                    console.log("Success response for a superseded Wikipedia request for '" + pageTitle + "'. UI not updated.");
+                }
+            },
+            error: function(jqXHR_this, textStatus, errorThrown) { 
+                const wasThisTheCurrentRequest = (currentWikiRequest === thisSpecificRequest);
+
+                if (wasThisTheCurrentRequest) {
+                    currentWikiRequest = null; 
+                      }
+
+                if (textStatus === 'abort') {
+                    console.log("Wikipedia request for '" + pageTitle + "' was aborted.");
+                } else {
+                    console.error("Wikipedia API request for '" + pageTitle + "' failed: " + textStatus, errorThrown);
+                    if (wasThisTheCurrentRequest) {
+                        if (callbackError) callbackError("No se pudo contactar con Wikipedia para obtener el resumen.");
+                    } else {
+                        console.log("Error belonged to a superseded Wikipedia request for '" + pageTitle + "'. UI not updated with this error.");
+                    }
+                }
+            }
+        });
+        currentWikiRequest = thisSpecificRequest; 
+    }
+
+    function clearDetailsPanel() {
+        if (!detailsPanel) return;
+
+        if (currentWikiRequest) {
+            currentWikiRequest.abort();
+            currentWikiRequest = null;
+        }
+        detailsPanel.html('<p>Haz clic en un marcador en el mapa para ver los detalles aquí.</p>');
+    }
+
+})();
+ 
+    </script>
+   </body>
+</html>
