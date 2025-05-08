@@ -439,7 +439,7 @@ LIMIT 650`;
                 }).addTo(map);
 
                 markerClusterGroup = L.markerClusterGroup({
-                    maxClusterRadius: 30,
+                    maxClusterRadius: 45,
                     iconCreateFunction: function (cluster) {
                         const count = cluster.getChildCount();
                         let size = 'large';
