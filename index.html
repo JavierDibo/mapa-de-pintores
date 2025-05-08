@@ -14,21 +14,24 @@
           color: #e0e0e0;
           font-size: 25px;
           display: flex;
+          flex-direction: column;
           align-items: center;
-          justify-content: center;
         }
         #page-wrapper {
           width: 97%;
           height: 90vh;
+          flex-grow: 1;
           display: flex;
           flex-direction: row;
           background-color: #2c2c2c;
           padding: 20px;
           box-sizing: border-box;
-          border-radius: 10px;
+          border-radius: 0px;
           overflow: hidden;
           box-shadow: 0 4px 15px rgba(0,0,0,0.25);
           gap: 20px;
+          margin-bottom: 15px;
+          align-items: center;
         }
         #map {
           height: 100%;
@@ -42,7 +45,7 @@
           gap: 20px;
         }
         #info-slider-area {
-          flex: 1;
+          flex: 0.38;
           display: flex;
           flex-direction: column;
           background-color: #2c2c2c;
@@ -53,7 +56,7 @@
           box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         #map-container {
-          flex: 1;
+          flex: 0.62;
           border: 1px solid #444;
           border-radius: 8px;
           box-shadow: 0 2px 5px rgba(0,0,0,0.2);
@@ -64,7 +67,7 @@
         }
         #details-panel {
           flex: 1;
-          height: 100%;
+          height: 95.3%;
           padding: 20px;
           border: 1px solid #444;
           border-radius: 8px;
@@ -78,13 +81,14 @@
           color: #bb86fc;
           padding: 10px 0;
           margin: 0 0 10px 0;
-          font-size: 2.2em;
+          font-size: 55px;
           font-weight: 300;
         }
         #intro-paragraph {
             text-align: center;
             margin: 0 0 15px 0;
             color: #b0b0b0;
+            font-size: 25px;
         }
         p {
           line-height: 1.6;
@@ -114,7 +118,7 @@
         }
         .slider-label {
           position: absolute;
-          font-size: 0.75em;
+          font-size: 17.5px;
           color: #c0c0c0;
           cursor: pointer;
           padding: 5px;
@@ -150,6 +154,7 @@
           background-color: #888;
           transform: translateX(-50%);
           bottom: -2px;
+          display: none;
         }
         input[type="range"] {
           -webkit-appearance: none;
@@ -182,13 +187,6 @@
           cursor: pointer;
           border: 2px solid #2c2c2c;
           box-shadow: 0 0 2px rgba(0,0,0,0.5);
-        }
-        #current-movement-display {
-          text-align: center;
-          margin-top: 10px;
-          font-weight: 600;
-          color: #bb86fc;
-          font-size: 1.1em;
         }
         #details-panel h2 {
           color: #bb86fc;
@@ -228,7 +226,22 @@
         #wikipedia-summary-container p a:hover {
             text-decoration: underline;
         }
-      </style> 
+        #page-footer {
+          width: 100%;
+          padding: 0 0;
+          text-align: center;
+          background-color: #2c2c2c;
+          color: #b0b0b0;
+          font-size: 0.6em;
+          border-radius: 0px;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+          box-sizing: border-box;
+        }
+        #page-footer p {
+            margin: 0;
+            line-height: 1.4;
+        }
+      </style>
 
       <script 
         type='text/javascript' 
@@ -248,16 +261,13 @@
       <div id="page-wrapper">
         <div id="left-column">
           <div id="info-slider-area">
-            <h1>Pintores Famosos y sus Raíces</h1>
+            <h1>Pintores del mundo y sus raíces</h1>
             <p id="intro-paragraph">Selecciona un movimiento artístico para ver pintores asociados y sus lugares de nacimiento.</p>
             <div id="slider-container">
               <div id="slider-labels" style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                 <!-- Labels will be populated by JavaScript -->
               </div>
               <input type="range" id="artisticMovementSlider" name="artisticMovementSlider" min="0" max="12" value="0" style="width: 100%;">
-              <div id="current-movement-display" style="text-align: center; margin-top: 5px; font-weight: bold;">
-                <!-- Current movement will be displayed here -->
-              </div>
             </div>
           </div>
           <div id="map-container">
@@ -288,20 +298,25 @@
     let currentWikiRequest = null; 
 
     const artisticMovements = [
-        { name: "Pop Art", uri: "http://www.wikidata.org/entity/Q134147", startYear: "1950s", endYear: "1970s" },
-        { name: "Expresionismo Abstracto", uri: "http://www.wikidata.org/entity/Q177725", startYear: "1940s", endYear: "1960s" },
-        { name: "Surrealismo", uri: "http://www.wikidata.org/entity/Q39427", startYear: "1920s", endYear: "1950s" },
-        { name: "Cubismo", uri: "http://www.wikidata.org/entity/Q42934", startYear: "1900s", endYear: "1920s" },
-        { name: "Expresionismo", uri: "http://www.wikidata.org/entity/Q80113", startYear: "1900s", endYear: "1930s" },
-        { name: "Art Nouveau", uri: "http://www.wikidata.org/entity/Q34636", startYear: "1890s", endYear: "1910s" },
-        { name: "Postimpresionismo", uri: "http://www.wikidata.org/entity/Q166713", startYear: "1880s", endYear: "1900s" },
-        { name: "Impresionismo", uri: "http://www.wikidata.org/entity/Q40415", startYear: "1860s", endYear: "1890s" },
-        { name: "Romanticismo", uri: "http://www.wikidata.org/entity/Q37068", startYear: "1790s", endYear: "1850s" },
-        { name: "Neoclasicismo", uri: "http://www.wikidata.org/entity/Q14378", startYear: "1760s", endYear: "1830s" },
-        { name: "Rococó", uri: "http://www.wikidata.org/entity/Q122960", startYear: "1730s", endYear: "1770s" },
-        { name: "Barroco", uri: "http://www.wikidata.org/entity/Q37853", startYear: "1600s", endYear: "1750s" },
-        { name: "Renacimiento", uri: "http://www.wikidata.org/entity/Q4692", startYear: "1300s", endYear: "1600s" }
-    ];
+    { name: "Pop Art", uri: "http://www.wikidata.org/entity/Q134147", startYear: "1950s", endYear: "1970s" },
+    { name: "Expresionismo Abstracto", uri: "http://www.wikidata.org/entity/Q177725", startYear: "1940s", endYear: "1960s" },
+    { name: "Surrealismo", uri: "http://www.wikidata.org/entity/Q39427", startYear: "1920s", endYear: "1950s" },
+    { name: "Cubismo", uri: "http://www.wikidata.org/entity/Q42934", startYear: "1900s", endYear: "1920s" }, // (aprox. 1907-1914/1920s)
+    { name: "Expresionismo", uri: "http://www.wikidata.org/entity/Q80113", startYear: "1900s", endYear: "1930s" }, // (aprox. 1905-1925/1930s)
+    { name: "Art Nouveau", uri: "http://www.wikidata.org/entity/Q34636", startYear: "1890s", endYear: "1910s" }, // (Usando Q34636 como indicaste)
+    { name: "Postimpresionismo", uri: "http://www.wikidata.org/entity/Q166713", startYear: "1880s", endYear: "1900s" }, // (aprox. 1886-1905)
+    { name: "Simbolismo", uri: "http://www.wikidata.org/entity/Q164800", startYear: "1880s", endYear: "1910s" },
+    { name: "Yōga", uri: "http://www.wikidata.org/entity/Q1633309", startYear: "1870s", endYear: "1940s" }, // (Pintura estilo occidental en Japón, Meiji en adelante)
+    { name: "Nihonga", uri: "http://www.wikidata.org/entity/Q1989975", startYear: "1870s", endYear: "1940s" }, // (Pintura japonesa tradicional modernizada, Meiji en adelante)
+    { name: "Impresionismo", uri: "http://www.wikidata.org/entity/Q40415", startYear: "1860s", endYear: "1890s" }, // (aprox. 1860s/70s-1880s/90s)
+    { name: "Realismo", uri: "http://www.wikidata.org/entity/Q10857409", startYear: "1840s", endYear: "1870s" },
+    { name: "Romanticismo", uri: "http://www.wikidata.org/entity/Q37068", startYear: "1790s", endYear: "1850s" },
+    { name: "Neoclasicismo", uri: "http://www.wikidata.org/entity/Q14378", startYear: "1760s", endYear: "1830s" },
+    { name: "Rococó", uri: "http://www.wikidata.org/entity/Q122960", startYear: "1730s", endYear: "1770s" },
+    { name: "Barroco", uri: "http://www.wikidata.org/entity/Q37853", startYear: "1600s", endYear: "1750s" },
+    { name: "Manierismo", uri: "http://www.wikidata.org/entity/Q131808", startYear: "1520s", endYear: "1590s" },
+    { name: "Renacimiento", uri: "http://www.wikidata.org/entity/Q4692", startYear: "1300s", endYear: "1600s" }
+];
 
     function makeSPARQLQuery(endpointUrl, sparqlQuery, doneCallback) {
         var settings = {
@@ -374,7 +389,25 @@ LIMIT 650`;
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        markerClusterGroup = L.markerClusterGroup({ maxClusterRadius: 50 });
+        markerClusterGroup = L.markerClusterGroup({
+            maxClusterRadius: 30,
+            iconCreateFunction: function(cluster) {
+                const count = cluster.getChildCount();
+                let size = 'large';
+                if (count < 10) {
+                    size = 'small';
+                } else if (count < 100) {
+                    size = 'medium';
+                }
+                const iconHtml = `<div style="width: 40px; height: 40px; border-radius: 50%; background-color: rgba(129, 199, 132, 0.50); color: white; border: 2px solid #FFFFFF; box-shadow: 0 0 3px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; font-size:16px; font-weight:bold; font-family: Arial, sans-serif;">${count}</div>`;
+                return L.divIcon({
+                    html: iconHtml,
+                    className: 'custom-cluster-' + size, // Not strictly needed with inline styles but good practice
+                    iconSize: [42, 42], // Account for border
+                    iconAnchor: [21, 21]
+                });
+            }
+        });
         map.addLayer(markerClusterGroup);
     }
 
@@ -410,10 +443,40 @@ LIMIT 650`;
                 }
             }
 
-            const letterIconHtml = 
-                `<div style="width: 38px; height: 38px; border-radius: 50%; background-color: #4A90E2; color: white; border: 1px solid #FFFFFF; box-shadow: 0 0 3px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; font-size:18px; font-weight:bold; font-family: Arial, sans-serif;">` +
-                `${displayLetter}` +
-                `</div>`;
+            const artworkImageUrlAvailable = info.sampledArtworkImage ? info.sampledArtworkImage.value : null;
+            const painterImageUrlAvailable = info.sampledPainterImage ? info.sampledPainterImage.value : null;
+            let markerBackgroundColor;
+            let letterIconHtml;
+            const wikipediaArticleExists = info.wikipediaArticle && info.wikipediaArticle.value;
+            const borderColor = wikipediaArticleExists ? '#4A90E2' : '#FFFFFF'; // Blue if Wikipedia article exists, white otherwise
+
+            if (artworkImageUrlAvailable || painterImageUrlAvailable) {
+                let imageUrlForMarker = artworkImageUrlAvailable || painterImageUrlAvailable;
+                let thumbnailUrlForMarker = imageUrlForMarker; // Fallback if not a commons URL or error
+
+                if (imageUrlForMarker.startsWith(commonsPrefix)) {
+                    try {
+                        const imageFileAndPath = imageUrlForMarker.substring(commonsPrefix.length);
+                        const filenameComponentForThumbnail = imageFileAndPath.substring(imageFileAndPath.lastIndexOf('/') + 1);
+                        // Request a small thumbnail, e.g., 40px wide
+                        thumbnailUrlForMarker = `${commonsPrefix}thumb/${imageFileAndPath}/40px-${filenameComponentForThumbnail}`;
+                    } catch (e) {
+                        console.error("Error constructing thumbnail URL for marker: " + imageUrlForMarker, e);
+                        // Fallback to trying to use the original URL if thumbnail construction fails
+                    }
+                }
+
+                letterIconHtml = 
+                    `<div style="width: 38px; height: 38px; border-radius: 50%; border: 3px solid ${borderColor}; box-shadow: 0 0 3px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; overflow: hidden; background-color: #e0e0e0;">` + // Added a light background for images that might not fill
+                    `  <img src="${thumbnailUrlForMarker}" alt="${displayLetter}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentElement.innerHTML=\'${displayLetter}'; this.parentElement.style.backgroundColor='#4A90E2';">` + // Fallback to letter if image fails
+                    `</div>`;
+            } else {
+                markerBackgroundColor = '#BDBDBD'; // Grey for markers without a specific image
+                letterIconHtml = 
+                    `<div style="width: 38px; height: 38px; border-radius: 50%; background-color: ${markerBackgroundColor}; color: white; border: 2px solid ${borderColor}; box-shadow: 0 0 3px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; font-size:18px; font-weight:bold; font-family: Arial, sans-serif;">` +
+                    `${displayLetter}` +
+                    `</div>`;
+            }
 
             const customMarkerIcon = L.divIcon({
                 html: letterIconHtml,
@@ -471,11 +534,6 @@ LIMIT 650`;
                 }
             }
 
-            if (finalImageUrl !== placeholderImageUrl) {
-                const preloader = new Image();
-                preloader.src = finalImageUrl;
-            }
-
             let artworkTitle = info.sampledArtworkLabel ? info.sampledArtworkLabel.value : "";
             if (!artworkTitle && artworkImageUrl) artworkTitle = "Obra destacada";
             else if (!artworkTitle && painterImageUrl && !artworkImageUrl) artworkTitle = "Retrato del artista";
@@ -514,7 +572,6 @@ LIMIT 650`;
         const artisticMovementSlider = $('#artisticMovementSlider');
         const sliderLabelsContainer = $('#slider-labels');
         const sliderBottomLabelsContainer = $('<div id="slider-bottom-labels"></div>');
-        const currentMovementDisplay = $('#current-movement-display');
 
         // Add bottom labels container after the slider
         artisticMovementSlider.after(sliderBottomLabelsContainer);
@@ -572,7 +629,6 @@ LIMIT 650`;
                 markerClusterGroup.clearLayers();
                 currentMarkers = [];
                 clearDetailsPanel(); 
-                currentMovementDisplay.text("Seleccione un movimiento");
                 $('#slider-labels .slider-label, #slider-bottom-labels .slider-label').removeClass('active-label');
                 return;
             }
@@ -580,8 +636,6 @@ LIMIT 650`;
             const actualMovementData = artisticMovements.find(m => m.uri === movementURI); // Get data from original array
             
             if (actualMovementData) {
-                currentMovementDisplay.text(actualMovementData.name);
-                
                 // Clear active class from all labels
                 $('#slider-labels .slider-label, #slider-bottom-labels .slider-label').removeClass('active-label');
                 
@@ -591,7 +645,6 @@ LIMIT 650`;
                     labelToActivate.addClass('active-label');
                 }
             } else {
-                currentMovementDisplay.text("Movimiento desconocido");
                 $('#slider-labels .slider-label, #slider-bottom-labels .slider-label').removeClass('active-label');
             }
 
@@ -653,8 +706,6 @@ LIMIT 650`;
         const initialReversedIndex = parseInt(artisticMovementSlider.val());
         if (reversedMovements[initialReversedIndex]) {
             updateMapForMovement(reversedMovements[initialReversedIndex].uri);
-        } else {
-            currentMovementDisplay.text("Seleccione un movimiento");
         }
     });
 
@@ -852,5 +903,9 @@ LIMIT 650`;
 })();
  
     </script>
+    <footer id="page-footer">
+      <p>Realizado por Javier Francisco Dibo Gómez</p>
+      <p>Los marcadores azules tienen un articulo en wikipedia</p>
+    </footer>
    </body>
 </html>
