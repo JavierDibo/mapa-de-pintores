@@ -13,7 +13,7 @@
             height: 100%; /* Changed from min-height: 100vh for consistency */
             margin: 0;
             font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            background-color: #1e1e1e;
+            background-color: #2c2c2c;
             color: #e0e0e0;
             font-size: 25px;
             display: flex;
@@ -73,6 +73,7 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
             font-size: 0.6em;
             box-sizing: border-box;
+            padding: 15px;  /* Added padding for inner spacing */
         }
 
         h1 {
@@ -259,6 +260,7 @@
             border-radius: 0px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
             box-sizing: border-box;
+            margin-top: 20px;  /* Added to create separation from content above */
         }
 
         #page-footer p {
@@ -783,7 +785,7 @@ LIMIT 650`;
                 } else if (dobValue) {
                     lifespanDetail = `Nacido/a: ${birthDateFormatted}`;
                 } else {
-                    lifespanDetail = "Periodo vital desconocido";
+                    lifespanDetail = "Periodo de vida desconocido";
                 }
 
                 const artworkImageUrl = info.sampledArtworkImage ? info.sampledArtworkImage.value : null;
@@ -811,7 +813,7 @@ LIMIT 650`;
 
                 const detailsHtml = `
             <h2 style="margin-top:0;">${painterLabel}</h2>
-            <p><strong>Periodo Vital:</strong> ${lifespanDetail}</p>
+            <p><strong>Periodo de vida:</strong> ${lifespanDetail}</p>
             <p><strong>Lugar de Nacimiento:</strong> ${birthPlaceLabel}</p>
             <p><em>${painterDescription}</em></p>
             <div style="text-align:center; margin-top:15px;">
