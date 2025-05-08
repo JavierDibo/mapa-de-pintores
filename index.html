@@ -316,50 +316,39 @@
             console.warn("queryPaintersAndArtworks called without an artisticMovementURI");
             return ""; 
         }
-        const sparqlQuery = `SELECT
-?painter ?painterLabel ?painterDescription
-?placeOfBirthLabel
-?lat ?lon
-?dateOfBirth ?dateOfDeath
-(SAMPLE(?artworkLabel) AS ?sampledArtworkLabel)
-(SAMPLE(?artworkImage) AS ?sampledArtworkImage)
-(SAMPLE(?painterImage) AS ?sampledPainterImage)
-(SAMPLE(?article) AS ?wikipediaArticle) # Added to get Wikipedia article URL
-WHERE {
-VALUES ?movement { <${artisticMovementURI}> } # Filter by selected movement
-?painter wdt:P31 wd:Q5; # instance of human
-         wdt:P106 wd:Q1028181; # occupation painter
-         wdt:P19 ?placeOfBirth;  # place of birth
-         wdt:P135 ?movement.   # artistic movement
-
-?placeOfBirth p:P625/psv:P625 [ # coordinate location
-    wikibase:geoLatitude ?lat;
-    wikibase:geoLongitude ?lon
-].
-
-OPTIONAL { ?painter wdt:P569 ?dateOfBirth. }
-OPTIONAL { ?painter wdt:P570 ?dateOfDeath. }
-
-OPTIONAL {
-  ?artwork wdt:P170 ?painter; # artwork created by painter
-           wdt:P31/wdt:P279* wd:Q11060274; # instance of visual artwork (or subclass)
-           wdt:P18 ?artworkImage.
-  OPTIONAL { ?artwork rdfs:label ?artworkLabel FILTER(LANG(?artworkLabel) IN ("es", "en")). }
-}
-
-OPTIONAL { ?painter wdt:P18 ?painterImage. } # Image of the painter
-
-OPTIONAL { # To get the Spanish Wikipedia article URL
-  ?article schema:about ?painter ;
-           schema:inLanguage "es" ;
-           schema:isPartOf <https://es.wikipedia.org/> .
-}
-
-SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],es,en". }
+        const sparqlQuery = `SELECT ?painter ?painterLabel ?painterDescription ?placeOfBirthLabel ?lat ?lon ?dateOfBirth ?dateOfDeath (SAMPLE(?artworkLabel) AS ?sampledArtworkLabel) (SAMPLE(?artworkImage) AS ?sampledArtworkImage) (SAMPLE(?painterImage) AS ?sampledPainterImage) (SAMPLE(?article) AS ?wikipediaArticle) WHERE {
+  VALUES ?movement {
+    <${artisticMovementURI}>
+  }
+  ?painter wdt:P31 wd:Q5;
+    wdt:P106 wd:Q1028181;
+    wdt:P19 ?placeOfBirth;
+    wdt:P135 ?movement.
+  ?placeOfBirth (p:P625/psv:P625) _:b5.
+  _:b5 wikibase:geoLatitude ?lat;
+    wikibase:geoLongitude ?lon.
+  OPTIONAL { ?painter wdt:P569 ?dateOfBirth. }
+  OPTIONAL { ?painter wdt:P570 ?dateOfDeath. }
+  OPTIONAL {
+    ?artwork wdt:P170 ?painter;
+      (wdt:P31/(wdt:P279*)) wd:Q11060274;
+      wdt:P18 ?artworkImage.
+    OPTIONAL {
+      ?artwork rdfs:label ?artworkLabel.
+      FILTER(LANG(?artworkLabel) IN("es", "en"))
+    }
+  }
+  OPTIONAL { ?painter wdt:P18 ?painterImage. }
+  OPTIONAL {
+    ?article schema:about ?painter;
+      schema:inLanguage "es";
+      schema:isPartOf <https://es.wikipedia.org/>.
+  }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en,mul". }
 }
 GROUP BY ?painter ?painterLabel ?painterDescription ?placeOfBirthLabel ?lat ?lon ?dateOfBirth ?dateOfDeath
-ORDER BY RAND()
-LIMIT 100`;
+ORDER BY (RAND())
+LIMIT 650`;
         return sparqlQuery;
     }
 
@@ -385,7 +374,7 @@ LIMIT 100`;
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        markerClusterGroup = L.markerClusterGroup({ maxClusterRadius: 40 });
+        markerClusterGroup = L.markerClusterGroup({ maxClusterRadius: 50 });
         map.addLayer(markerClusterGroup);
     }
 
